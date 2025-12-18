@@ -3,12 +3,13 @@ package nfsinstance
 import (
 	"context"
 	"encoding/json"
-	"github.com/kyma-project/cloud-manager/pkg/kcp/provider/gcp/config"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/kyma-project/cloud-manager/pkg/kcp/provider/gcp/config"
 
 	"github.com/go-logr/logr"
 	"github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
@@ -30,6 +31,8 @@ type syncNfsInstanceSuite struct {
 
 func (s *syncNfsInstanceSuite) SetupTest() {
 	s.ctx = log.IntoContext(context.Background(), logr.Discard())
+	// Reset feature flags before each test to prevent leaking between tests
+	_ = feature.Initialize(s.ctx, logr.Discard())
 }
 
 func (s *syncNfsInstanceSuite) TestSyncNfsInstanceAddSuccess() {
@@ -409,12 +412,9 @@ func (s *syncNfsInstanceSuite) TestGetInstanceWithProtocol_Zonal_With_FF() {
 	assert.Equal(s.T(), string(gcpclient.FilestoreProtocolNFSv41), instance.Protocol)
 	instance.Protocol = ""
 	assert.Equal(s.T(), testState.toInstance(), instance)
-	_ = feature.Initialize(ctx, logr.Discard())
 }
 
 func (s *syncNfsInstanceSuite) TestGetInstanceWithProtocol_Regional_Without_FF() {
-	s.T().Skip("I'm flaky, fix me please!!!")
-
 	gcpNfsInstance := getGcpNfsInstance()
 	gcpNfsInstance.Spec.Instance.Gcp.Tier = v1beta1.REGIONAL
 	fakeHttpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
