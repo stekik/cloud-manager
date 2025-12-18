@@ -400,15 +400,13 @@ func (s *syncNfsInstanceSuite) TestGetInstanceWithProtocol_Zonal_With_FF() {
 	}))
 	factory, err := newTestStateFactory(fakeHttpServer, gcpNfsInstance)
 	assert.Nil(s.T(), err)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	err = feature.Initialize(ctx, logr.Discard(), feature.WithFile("testdata/nfs41Enabled.yaml"))
+	err = feature.Initialize(s.ctx, logr.Discard(), feature.WithFile("testdata/nfs41Enabled.yaml"))
 	assert.NoError(s.T(), err)
 
-	testState, err := factory.newStateWith(ctx, gcpNfsInstance, "")
+	testState, err := factory.newStateWith(s.ctx, gcpNfsInstance, "")
 	assert.Nil(s.T(), err)
 	defer testState.FakeHttpServer.Close()
-	instance := getInstanceWithProtocol(ctx, testState.State)
+	instance := getInstanceWithProtocol(s.ctx, testState.State)
 	assert.Equal(s.T(), string(gcpclient.FilestoreProtocolNFSv41), instance.Protocol)
 	instance.Protocol = ""
 	assert.Equal(s.T(), testState.toInstance(), instance)
@@ -423,15 +421,12 @@ func (s *syncNfsInstanceSuite) TestGetInstanceWithProtocol_Regional_Without_FF()
 	factory, err := newTestStateFactory(fakeHttpServer, gcpNfsInstance)
 	assert.Nil(s.T(), err)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
 	//Get state object with GcpNfsVolume
 
-	testState, err := factory.newStateWith(ctx, gcpNfsInstance, "")
+	testState, err := factory.newStateWith(s.ctx, gcpNfsInstance, "")
 	assert.Nil(s.T(), err)
 	defer testState.FakeHttpServer.Close()
-	instance := getInstanceWithProtocol(ctx, testState.State)
+	instance := getInstanceWithProtocol(s.ctx, testState.State)
 	assert.Empty(s.T(), instance.Protocol)
 	assert.Equal(s.T(), testState.toInstance(), instance)
 }
@@ -445,16 +440,14 @@ func (s *syncNfsInstanceSuite) TestGetInstanceWithProtocol_Regional_With_FF() {
 	factory, err := newTestStateFactory(fakeHttpServer, gcpNfsInstance)
 	assert.Nil(s.T(), err)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-	err = feature.Initialize(ctx, logr.Discard(), feature.WithFile("testdata/nfs41Enabled.yaml"))
+	err = feature.Initialize(s.ctx, logr.Discard(), feature.WithFile("testdata/nfs41Enabled.yaml"))
 	assert.NoError(s.T(), err)
 	//Get state object with GcpNfsVolume
 
-	testState, err := factory.newStateWith(ctx, gcpNfsInstance, "")
+	testState, err := factory.newStateWith(s.ctx, gcpNfsInstance, "")
 	assert.Nil(s.T(), err)
 	defer testState.FakeHttpServer.Close()
-	instance := getInstanceWithProtocol(ctx, testState.State)
+	instance := getInstanceWithProtocol(s.ctx, testState.State)
 	assert.Equal(s.T(), string(gcpclient.FilestoreProtocolNFSv41), instance.Protocol)
 	instance.Protocol = ""
 	assert.Equal(s.T(), testState.toInstance(), instance)
