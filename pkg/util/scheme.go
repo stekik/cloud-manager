@@ -8,7 +8,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 )
-
 func GetObjGvk(scheme *runtime.Scheme, out runtime.Object) (gvk schema.GroupVersionKind, e error) {
 	gvkArr, _, err := scheme.ObjectKinds(out)
 	if err != nil {
