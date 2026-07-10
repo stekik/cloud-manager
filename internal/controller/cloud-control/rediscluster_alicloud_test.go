@@ -212,6 +212,10 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 				).Should(Succeed())
 		})
 
+		By("And Then RedisCluster status.shardCount is 6", func() {
+			Expect(redisCluster.Status.ShardCount).To(Equal(int32(6)))
+		})
+
 		// DELETE
 
 		By("When RedisCluster is deleted", func() {

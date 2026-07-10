@@ -1,6 +1,7 @@
 package cloudcontrol
 
 import (
+	"fmt"
 	"time"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
@@ -111,7 +112,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 		})
 	})
 
-	It("Scenario: KCP AliCloud RedisInstance create error is surfaced", func() {
+	It("Scenario: KCP AliCloud RedisInstance load error is surfaced", func() {
 
 		alicloudAccount := infra.AlicloudMock().NewAccount()
 		defer alicloudAccount.Delete()
@@ -148,7 +149,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 
 		redisInstance := &cloudcontrolv1beta1.RedisInstance{}
 
-		By("When RedisInstance is created and transitions to Normal", func() {
+		By("When RedisInstance is created", func() {
 			Eventually(CreateRedisInstance).
 				WithArguments(infra.Ctx(), infra.KCP().Client(), redisInstance,
 					WithName(name),
@@ -171,11 +172,24 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 				).Should(Succeed())
 		})
 
-		By("And Given AliCloud Redis is Normal", func() {
+		By("When AliCloud returns an error on describe", func() {
+			alicloudMock.SetRedisInstanceError(redisInstance.Status.Id, fmt.Errorf("simulated AliCloud API failure"))
+		})
+
+		By("Then RedisInstance has Error condition", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisInstance,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeError),
+				).Should(Succeed(), "expected RedisInstance to surface error condition")
+		})
+
+		By("When error is cleared", func() {
+			alicloudMock.SetRedisInstanceError(redisInstance.Status.Id, nil)
 			alicloudMock.TransitionAllToNormal()
 		})
 
-		By("And Given RedisInstance is Ready", func() {
+		By("Then RedisInstance recovers to Ready", func() {
 			Eventually(LoadAndCheck).
 				WithArguments(infra.Ctx(), infra.KCP().Client(), redisInstance,
 					NewObjActions(),
