@@ -1,0 +1,162 @@
+package cloudresources
+
+import (
+	"github.com/google/uuid"
+
+	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
+	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
+	skriprange "github.com/kyma-project/cloud-manager/pkg/skr/iprange"
+	. "github.com/kyma-project/cloud-manager/pkg/testinfra/dsl"
+	"github.com/kyma-project/cloud-manager/pkg/util"
+	. "github.com/onsi/ginkgo/v2"
+	. "github.com/onsi/gomega"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/types"
+)
+
+var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
+
+	It("Scenario: SKR AlicloudRedisCluster is created and deleted", func() {
+
+		skrIpRangeName := uuid.NewString()
+		skrIpRange := &cloudresourcesv1beta1.IpRange{}
+		skrIpRangeId := uuid.NewString()
+
+		By("And Given SKR IpRange exists", func() {
+			skriprange.Ignore.AddName(skrIpRangeName)
+			Eventually(CreateSkrIpRange).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
+					WithName(skrIpRangeName),
+				).Should(Succeed())
+		})
+
+		By("And Given SKR IpRange has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
+					WithSkrIpRangeStatusCidr(skrIpRange.Spec.Cidr),
+					WithSkrIpRangeStatusId(skrIpRangeId),
+					WithConditions(SkrReadyCondition()),
+				).Should(Succeed())
+		})
+
+		alicloudRedisClusterName := uuid.NewString()
+		skrKymaRef := util.Must(infra.ScopeProvider().GetScope(infra.Ctx(), types.NamespacedName{Name: alicloudRedisClusterName}))
+		alicloudRedisCluster := &cloudresourcesv1beta1.AlicloudRedisCluster{}
+
+		const authSecretName = "alicloud-cluster-auth-secret"
+		authSecretLabels := map[string]string{"env": "test"}
+		authSecretAnnotations := map[string]string{"note": "alicloud-cluster"}
+		extraData := map[string]string{
+			"discovery": "{{.host}}:{{.port}}",
+		}
+
+		By("When AlicloudRedisCluster is created", func() {
+			Eventually(CreateAlicloudRedisCluster).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
+					WithName(alicloudRedisClusterName),
+					WithIpRange(skrIpRange.Name),
+					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
+					WithAlicloudRedisClusterShardCount(3),
+					WithAlicloudRedisClusterReplicasPerShard(1),
+					WithAlicloudRedisClusterEngineVersion("7.0"),
+					WithAlicloudRedisClusterAuthSecretName(authSecretName),
+					WithAlicloudRedisClusterAuthSecretLabels(authSecretLabels),
+					WithAlicloudRedisClusterAuthSecretAnnotations(authSecretAnnotations),
+					WithAlicloudRedisClusterAuthSecretExtraData(extraData),
+				).Should(Succeed())
+		})
+
+		kcpRedisCluster := &cloudcontrolv1beta1.RedisCluster{}
+
+		By("Then KCP RedisCluster is created", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
+					NewObjActions(),
+					HavingFieldSet("status", "id"),
+				).Should(Succeed(), "expected SKR AlicloudRedisCluster to get status.id")
+
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
+					NewObjActions(WithName(alicloudRedisCluster.Status.Id)),
+				).Should(Succeed())
+
+			By("And it has KCP labels")
+			Expect(kcpRedisCluster.Annotations[cloudcontrolv1beta1.LabelKymaName]).To(Equal(skrKymaRef.Name))
+			Expect(kcpRedisCluster.Annotations[cloudcontrolv1beta1.LabelRemoteName]).To(Equal(alicloudRedisCluster.Name))
+			Expect(kcpRedisCluster.Annotations[cloudcontrolv1beta1.LabelRemoteNamespace]).To(Equal(alicloudRedisCluster.Namespace))
+
+			By("And spec.instance.alicloud matches SKR tier")
+			Expect(kcpRedisCluster.Spec.Instance.Alicloud).NotTo(BeNil())
+			Expect(kcpRedisCluster.Spec.Instance.Alicloud.InstanceClass).To(Equal("redis.shard.large.ce"))
+			Expect(kcpRedisCluster.Spec.Instance.Alicloud.ShardCount).To(Equal(int32(3)))
+			Expect(kcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard).To(Equal(int32(1)))
+			Expect(kcpRedisCluster.Spec.Instance.Alicloud.EngineVersion).To(Equal("7.0"))
+		})
+
+		kcpDiscoveryEndpoint := "r-cluster123.redis.rds.aliyuncs.com:6379"
+		kcpAuthString := uuid.NewString()
+
+		By("When KCP RedisCluster has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
+					WithRedisInstanceDiscoveryEndpoint(kcpDiscoveryEndpoint),
+					WithRedisInstanceAuthString(kcpAuthString),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisCluster has Ready condition", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudresourcesv1beta1.ConditionTypeReady),
+					HavingFieldValue(cloudresourcesv1beta1.StateReady, "status", "state"),
+				).Should(Succeed())
+		})
+
+		authSecret := &corev1.Secret{}
+		By("And Then SKR auth Secret is created", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), authSecret,
+					NewObjActions(
+						WithName(authSecretName),
+						WithNamespace(alicloudRedisCluster.Namespace),
+					),
+					HavingLabelKeys(
+						util.WellKnownK8sLabelComponent,
+						util.WellKnownK8sLabelPartOf,
+						util.WellKnownK8sLabelManagedBy,
+					),
+					HavingLabel(cloudresourcesv1beta1.LabelRedisClusterStatusId, alicloudRedisCluster.Status.Id),
+					HavingLabels(authSecretLabels),
+					HavingAnnotations(authSecretAnnotations),
+				).Should(Succeed())
+
+			Expect(authSecret.Data).To(HaveKey("discoveryEndpoint"))
+			Expect(authSecret.Data).To(HaveKey("host"))
+			Expect(authSecret.Data).To(HaveKey("port"))
+			Expect(authSecret.Data).To(HaveKey("authString"))
+			Expect(authSecret.Data).To(HaveKeyWithValue("discovery", []byte(kcpDiscoveryEndpoint)))
+		})
+
+		// DELETE
+
+		By("When AlicloudRedisCluster is deleted", func() {
+			Eventually(Delete).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster).
+				Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisCluster does not exist", func() {
+			Eventually(IsDeleted).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster).
+				Should(Succeed())
+		})
+
+		By("And Then SKR auth Secret is deleted", func() {
+			Eventually(IsDeleted).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), authSecret).
+				Should(Succeed())
+		})
+	})
+})
