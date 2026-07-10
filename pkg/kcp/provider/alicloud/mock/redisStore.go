@@ -159,6 +159,7 @@ func (s *redisStore) createInstance(ctx context.Context, opts redisinstance.Crea
 			Port:             pickPort(opts.Port),
 			ConnectionDomain: fmt.Sprintf("%s.redis.rds.aliyuncs.com", id),
 			ShardCount:       opts.ShardCount,
+			ReplicasPerShard: opts.ReadOnlyCount,
 			Password:         opts.Password,
 		}
 		return id, nil
@@ -235,6 +236,7 @@ func (s *redisStore) describeInstance(ctx context.Context, instanceId string) (*
 			ConnectionDomain: e.ConnectionDomain,
 			ChargeType:       e.ChargeType,
 			ShardCount:       e.ShardCount,
+			ReadOnlyCount:    e.ReplicasPerShard,
 			Config:           e.Config,
 		}, nil
 	}
@@ -268,6 +270,7 @@ func (s *redisStore) modifyInstanceSpec(ctx context.Context, instanceId string, 
 		if opts.ShardCount > 0 {
 			e.ShardCount = opts.ShardCount
 		}
+		e.ReplicasPerShard = opts.ReadOnlyCount
 		e.InstanceStatus = redisinstance.InstanceStatusChanging
 		return nil
 	}
