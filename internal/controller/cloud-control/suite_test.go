@@ -142,6 +142,7 @@ var _ = BeforeSuite(func() {
 		infra.GcpMock2().RedisInstanceProvider(),
 		infra.AzureMock().RedisClientProvider(),
 		infra.AwsMock().ElastiCacheProviderFake(),
+		infra.AlicloudMock().RedisInstanceClientProvider(),
 		env,
 	)).NotTo(HaveOccurred())
 	// RedisCluster
