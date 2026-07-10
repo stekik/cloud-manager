@@ -30,7 +30,7 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 		meta.SetStatusCondition(state.ObjAsRedisCluster().Conditions(), metav1.Condition{
 			Type:    cloudcontrolv1beta1.ConditionTypeError,
 			Status:  metav1.ConditionTrue,
-			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingFileSystem,
+			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisCluster,
 			Message: fmt.Sprintf("Failed loading AlicloudRedisCluster: %s", err),
 		})
 		if updErr := state.UpdateObjStatus(ctx); updErr != nil {
@@ -38,7 +38,7 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 				"Error updating RedisCluster status after failed DescribeInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 		}
-		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	}
 
 	state.instance = info

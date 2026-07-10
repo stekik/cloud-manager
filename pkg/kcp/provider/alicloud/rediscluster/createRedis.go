@@ -41,6 +41,19 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			break
 		}
 	}
+	if vSwitchId == "" {
+		return composed.LogErrorAndReturn(
+			fmt.Errorf("no vSwitch found in IpRange subnets"),
+			"AliCloud rediscluster IpRange has no vSwitch",
+			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+	}
+
+	// Generate password before CreateInstance — AliCloud never returns it after.
+	// If AuthString is already set (idempotent retry), reuse it.
+	password := kcp.Status.AuthString
+	if password == "" {
+		password = util.RandomString(32)
+	}
 
 	opts := alicloudclient.CreateInstanceOptions{
 		InstanceName:  kcp.Name,
@@ -48,6 +61,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		EngineVersion: kcp.Spec.Instance.Alicloud.EngineVersion,
 		VpcId:         state.IpRange().Status.VpcId,
 		VSwitchId:     vSwitchId,
+		Password:      password,
 		ShardCount:    kcp.Spec.Instance.Alicloud.ShardCount,
 		ReadOnlyCount: kcp.Spec.Instance.Alicloud.ReplicasPerShard,
 		Token:         string(kcp.UID),
@@ -59,7 +73,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		meta.SetStatusCondition(kcp.Conditions(), metav1.Condition{
 			Type:    cloudcontrolv1beta1.ConditionTypeError,
 			Status:  metav1.ConditionTrue,
-			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingFileSystem,
+			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisCluster,
 			Message: fmt.Sprintf("Failed creating AlicloudRedisCluster: %s", err),
 		})
 		if updErr := state.UpdateObjStatus(ctx); updErr != nil {
@@ -67,15 +81,16 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 				"Error updating RedisCluster status after failed CreateInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 		}
-		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), nil
+		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 	}
 
 	kcp.Status.Id = instanceId
+	kcp.Status.AuthString = password
 	if err := state.UpdateObjStatus(ctx); err != nil {
 		return composed.LogErrorAndReturn(err,
-			"Error persisting new AliCloud r-kvstore cluster instance ID",
+			"Error persisting new AliCloud r-kvstore cluster instance ID and auth string",
 			composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 	}
 
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

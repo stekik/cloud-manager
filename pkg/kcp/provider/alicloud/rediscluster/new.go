@@ -23,7 +23,20 @@ func New(stateFactory StateFactory) composed.Action {
 		return composed.ComposeActionsNoName(
 			actions.AddCommonFinalizer(),
 			loadRedis,
-			composed.IfElse(composed.Not(composed.MarkedForDeletionPredicate),
+
+			// delete ================================================================================
+			composed.If(composed.MarkedForDeletionPredicate,
+				composed.ComposeActionsNoName(
+					removeReadyCondition,
+					deleteRedis,
+					waitRedisDeleted,
+					actions.RemoveCommonFinalizer(),
+					composed.StopAndForgetAction,
+				),
+			),
+
+			// create/update =========================================================================
+			composed.If(composed.NotMarkedForDeletionPredicate,
 				composed.ComposeActionsNoName(
 					createRedis,
 					waitRedisAvailable,
@@ -35,14 +48,8 @@ func New(stateFactory StateFactory) composed.Action {
 					waitRedisAvailable,
 					updateStatus,
 				),
-				composed.ComposeActionsNoName(
-					removeReadyCondition,
-					deleteRedis,
-					waitRedisDeleted,
-					actions.RemoveCommonFinalizer(),
-					composed.StopAndForgetAction,
-				),
 			),
+
 			composed.StopAndForgetAction,
 		)(ctx, state)
 	}

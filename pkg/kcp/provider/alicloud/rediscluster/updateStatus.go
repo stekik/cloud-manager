@@ -36,6 +36,11 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 		changed = true
 	}
 
+	// AuthString was written at CreateInstance time and must not be cleared.
+	if kcp.Status.AuthString == "" {
+		changed = true
+	}
+
 	hasReady := meta.FindStatusCondition(kcp.Status.Conditions, cloudcontrolv1beta1.ConditionTypeReady) != nil
 	hasReadyState := kcp.Status.State == cloudcontrolv1beta1.StateReady
 

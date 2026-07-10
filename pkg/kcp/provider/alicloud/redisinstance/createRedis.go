@@ -13,9 +13,8 @@ import (
 )
 
 // createRedis provisions a new r-kvstore instance if one does not yet exist.
-// The password is expected to be supplied via the SKR AuthSecret (Phase 5);
-// until Phase 5 lands, no password is passed and AliCloud generates one on
-// its side (later reset via ResetAccountPassword when the SKR side wires up).
+// The password is generated here and stored immediately on Status.AuthString
+// because AliCloud never returns it after CreateInstance (design decision 6).
 func createRedis(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	logger := composed.LoggerFromCtx(ctx)
@@ -45,12 +44,27 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			break
 		}
 	}
+	if vSwitchId == "" {
+		return composed.LogErrorAndReturn(
+			fmt.Errorf("no vSwitch found in IpRange subnets"),
+			"AliCloud redisinstance IpRange has no vSwitch",
+			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+	}
+
+	// Generate password before CreateInstance — AliCloud never returns it after.
+	// If AuthString is already set (idempotent retry), reuse it.
+	password := kcp.Status.AuthString
+	if password == "" {
+		password = util.RandomString(32)
+	}
+
 	opts := alicloudclient.CreateInstanceOptions{
 		InstanceName:  kcp.Name,
 		InstanceClass: kcp.Spec.Instance.Alicloud.InstanceClass,
 		EngineVersion: kcp.Spec.Instance.Alicloud.EngineVersion,
 		VpcId:         state.IpRange().Status.VpcId,
 		VSwitchId:     vSwitchId,
+		Password:      password,
 		ReadOnlyCount: kcp.Spec.Instance.Alicloud.ReadOnlyCount,
 		Token:         string(kcp.UID),
 	}
@@ -61,7 +75,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		meta.SetStatusCondition(kcp.Conditions(), metav1.Condition{
 			Type:    cloudcontrolv1beta1.ConditionTypeError,
 			Status:  metav1.ConditionTrue,
-			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingFileSystem,
+			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisInstance,
 			Message: fmt.Sprintf("Failed creating AlicloudRedis: %s", err),
 		})
 		if updErr := state.UpdateObjStatus(ctx); updErr != nil {
@@ -69,15 +83,16 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 				"Error updating RedisInstance status after failed CreateInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 		}
-		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), nil
+		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 	}
 
 	kcp.Status.Id = instanceId
+	kcp.Status.AuthString = password
 	if err := state.UpdateObjStatus(ctx); err != nil {
 		return composed.LogErrorAndReturn(err,
-			"Error persisting new AliCloud r-kvstore instance ID",
+			"Error persisting new AliCloud r-kvstore instance ID and auth string",
 			composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 	}
 
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }
