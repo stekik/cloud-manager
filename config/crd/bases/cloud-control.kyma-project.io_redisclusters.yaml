@@ -50,6 +50,65 @@ spec:
                 maxProperties: 1
                 minProperties: 1
                 properties:
+                  alicloud:
+                    description: |-
+                      RedisClusterAlicloud describes an AliCloud r-kvstore sharded cloud-native
+                      cluster instance in the KCP RedisCluster CRD.
+
+                      InstanceClass is the per-shard AliCloud r-kvstore instance class string
+                      (e.g. "redis.shard.large.ce"). It is resolved by the SKR reconciler from the
+                      SKR-side redisTier abstraction.
+
+                      AliCloud does not support changing InstanceClass and ShardCount in the same
+                      ModifyInstanceSpec call. The KCP cluster pipeline uses two separate modify
+                      actions, each followed by a wait for the instance to become available. See
+                      design decision 8 in issue #2012.
+                    properties:
+                      engineVersion:
+                        default: "7.0"
+                        description: |-
+                          EngineVersion is set at creation and can only be upgraded (not downgraded)
+                          via ModifyInstanceMajorVersion.
+                        enum:
+                        - "5.0"
+                        - "6.0"
+                        - "7.0"
+                        type: string
+                        x-kubernetes-validations:
+                        - message: engineVersion cannot be downgraded.
+                          rule: (self != "5.0" || oldSelf == "5.0")
+                        - message: engineVersion cannot be downgraded.
+                          rule: (self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0")
+                        - message: engineVersion cannot be downgraded.
+                          rule: (self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0"
+                            || oldSelf == "5.0")
+                      instanceClass:
+                        type: string
+                      parameters:
+                        additionalProperties:
+                          type: string
+                        description: Parameters are passed to the AliCloud instance
+                          as runtime configuration.
+                        type: object
+                      replicasPerShard:
+                        default: 1
+                        description: 'ReplicasPerShard: 0 = no replica per shard,
+                          1 = HA per shard.'
+                        format: int32
+                        maximum: 1
+                        minimum: 0
+                        type: integer
+                      shardCount:
+                        description: ShardCount is the number of data shards in the
+                          cluster.
+                        format: int32
+                        maximum: 32
+                        minimum: 1
+                        type: integer
+                    required:
+                    - instanceClass
+                    - shardCount
+                    type: object
                   aws:
                     properties:
                       authEnabled:
