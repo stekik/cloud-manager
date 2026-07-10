@@ -1,0 +1,28 @@
+{
+  "Version": "1",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "r-kvstore:AddShardingNode",
+        "r-kvstore:CreateInstance",
+        "r-kvstore:DeleteInstance",
+        "r-kvstore:DeleteShardingNode",
+        "r-kvstore:DescribeInstanceAttribute",
+        "r-kvstore:DescribeInstances",
+        "r-kvstore:DescribeZones",
+        "r-kvstore:ModifyInstanceConfig",
+        "r-kvstore:ModifyInstanceSpec",
+        "r-kvstore:ResetAccountPassword",
+        "vpc:CreateVSwitch",
+        "vpc:CreateVpc",
+        "vpc:DeleteVSwitch",
+        "vpc:DeleteVpc",
+        "vpc:DescribeVSwitches",
+        "vpc:DescribeVpcs",
+        "vpc:DescribeZones"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
