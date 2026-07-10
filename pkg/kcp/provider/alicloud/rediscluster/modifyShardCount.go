@@ -22,7 +22,9 @@ func modifyShardCount(ctx context.Context, st composed.State) (error, context.Co
 	desired := kcp.Spec.Instance.Alicloud.ShardCount
 	current := state.instance.ShardCount
 
-	if desired == current {
+	// current == 0 means the API has not yet surfaced the shard count (the field
+	// is omitted until the cluster is fully Normal). Don't act on unknown state.
+	if current == 0 || desired == current {
 		return nil, ctx
 	}
 

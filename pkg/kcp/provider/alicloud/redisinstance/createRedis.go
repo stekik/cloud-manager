@@ -52,10 +52,18 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	}
 
 	// Generate password before CreateInstance — AliCloud never returns it after.
-	// If AuthString is already set (idempotent retry), reuse it.
+	// Persist it before calling CreateInstance so a crash after the API call but
+	// before status write does not lose the password on the next retry (the
+	// idempotency Token returns the same instance; we must not regenerate).
 	password := kcp.Status.AuthString
 	if password == "" {
 		password = util.RandomString(32)
+		kcp.Status.AuthString = password
+		if err := state.UpdateObjStatus(ctx); err != nil {
+			return composed.LogErrorAndReturn(err,
+				"Error persisting AliCloud r-kvstore instance auth string before create",
+				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
+		}
 	}
 
 	opts := alicloudclient.CreateInstanceOptions{
@@ -87,10 +95,9 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	}
 
 	kcp.Status.Id = instanceId
-	kcp.Status.AuthString = password
 	if err := state.UpdateObjStatus(ctx); err != nil {
 		return composed.LogErrorAndReturn(err,
-			"Error persisting new AliCloud r-kvstore instance ID and auth string",
+			"Error persisting new AliCloud r-kvstore instance ID",
 			composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 	}
 

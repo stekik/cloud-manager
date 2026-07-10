@@ -86,15 +86,9 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 					NewObjActions(),
 					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
 					HavingState("Ready"),
+					HavingFieldSet("status", "primaryEndpoint"),
+					HavingFieldSet("status", "authString"),
 				).Should(Succeed(), "expected RedisInstance to reach Ready state")
-		})
-
-		By("And Then RedisInstance has .status.primaryEndpoint set", func() {
-			Expect(len(redisInstance.Status.PrimaryEndpoint) > 0).To(BeTrue())
-		})
-
-		By("And Then RedisInstance has .status.authString set", func() {
-			Expect(len(redisInstance.Status.AuthString) > 0).To(BeTrue())
 		})
 
 		// DELETE
