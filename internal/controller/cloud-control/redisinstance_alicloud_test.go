@@ -45,6 +45,11 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 			Eventually(UpdateStatus).
 				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
 					WithKcpIpRangeStatusCidr(kcpIpRange.Spec.Cidr),
+					WithKcpIpRangeStatusVpcId("vpc-alicloud-test-01"),
+					WithKcpIpRangeStatusSubnets(cloudcontrolv1beta1.IpRangeSubnet{
+						Id:   "vsw-alicloud-test-01",
+						Zone: "cn-hangzhou-a",
+					}),
 					WithConditions(KcpReadyCondition()),
 				).Should(Succeed(), "Expected KCP IpRange to become ready")
 		})
@@ -137,6 +142,11 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 			Eventually(UpdateStatus).
 				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
 					WithKcpIpRangeStatusCidr(kcpIpRange.Spec.Cidr),
+					WithKcpIpRangeStatusVpcId("vpc-alicloud-test-02"),
+					WithKcpIpRangeStatusSubnets(cloudcontrolv1beta1.IpRangeSubnet{
+						Id:   "vsw-alicloud-test-02",
+						Zone: "cn-hangzhou-a",
+					}),
 					WithConditions(KcpReadyCondition()),
 				).Should(Succeed(), "Expected KCP IpRange to become ready")
 		})
