@@ -324,6 +324,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = cloudresourcescontroller.SetupAlicloudRedisInstanceReconciler(skrRegistry); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AlicloudRedisInstance")
+		os.Exit(1)
+	}
+
+	if err = cloudresourcescontroller.SetupAlicloudRedisClusterReconciler(skrRegistry); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "AlicloudRedisCluster")
+		os.Exit(1)
+	}
+
 	if err = cloudresourcescontroller.SetupAwsVpcPeeringReconciler(skrRegistry); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "AwsVpcPeering")
 		os.Exit(1)
