@@ -53,6 +53,9 @@ type RedisInstanceInfo struct {
 
 	// +optional
 	Aws *RedisInstanceAws `json:"aws,omitempty"`
+
+	// +optional
+	Alicloud *RedisInstanceAlicloud `json:"alicloud,omitempty"`
 }
 
 type RedisInstanceAzureConfigs struct {

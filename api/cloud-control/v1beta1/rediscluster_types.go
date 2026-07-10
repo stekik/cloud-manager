@@ -97,6 +97,9 @@ type RedisClusterInfo struct {
 
 	// +optional
 	Aws *RedisClusterAws `json:"aws,omitempty"`
+
+	// +optional
+	Alicloud *RedisClusterAlicloud `json:"alicloud,omitempty"`
 }
 
 // RedisClusterSpec defines the desired state of RedisCluster
