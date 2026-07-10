@@ -88,15 +88,9 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 					NewObjActions(),
 					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
 					HavingState("Ready"),
+					HavingFieldSet("status", "discoveryEndpoint"),
+					HavingFieldSet("status", "authString"),
 				).Should(Succeed(), "expected RedisCluster to reach Ready state")
-		})
-
-		By("And Then RedisCluster has .status.discoveryEndpoint set", func() {
-			Expect(len(redisCluster.Status.DiscoveryEndpoint) > 0).To(BeTrue())
-		})
-
-		By("And Then RedisCluster has .status.authString set", func() {
-			Expect(len(redisCluster.Status.AuthString) > 0).To(BeTrue())
 		})
 
 		// DELETE
@@ -200,20 +194,17 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 		})
 
 		By("Then AliCloud transitions to Changing and back to Normal", func() {
-			alicloudMock.TransitionAllToNormal()
-		})
-
-		By("Then RedisCluster remains Ready after scale-up", func() {
-			Eventually(LoadAndCheck).
-				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+			// Drive TransitionAllToNormal inside Eventually so it fires after
+			// AddShardingNode has been called and the mock entry is Changing.
+			Eventually(func() error {
+				alicloudMock.TransitionAllToNormal()
+				return LoadAndCheck(infra.Ctx(), infra.KCP().Client(), redisCluster,
 					NewObjActions(),
 					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
 					HavingState("Ready"),
-				).Should(Succeed())
-		})
-
-		By("And Then RedisCluster status.shardCount is 6", func() {
-			Expect(redisCluster.Status.ShardCount).To(Equal(int32(6)))
+					HavingFieldValue(int32(6), "status", "shardCount"),
+				)
+			}).Should(Succeed(), "expected RedisCluster to reach Ready with shardCount=6")
 		})
 
 		// DELETE
