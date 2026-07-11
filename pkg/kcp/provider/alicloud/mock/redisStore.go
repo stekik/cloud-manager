@@ -191,6 +191,54 @@ func pickPort(p int64) int64 {
 	return redisinstance.DefaultPort
 }
 
+func (s *redisStore) describeInstanceByName(ctx context.Context, name string) (*redisinstance.InstanceInfo, error) {
+	if isContextCanceled(ctx) {
+		return nil, context.Canceled
+	}
+	s.m.Lock()
+	defer s.m.Unlock()
+	for _, e := range s.instances {
+		if e.InstanceName == name {
+			return &redisinstance.InstanceInfo{
+				InstanceId:       e.InstanceId,
+				InstanceStatus:   e.InstanceStatus,
+				InstanceClass:    e.InstanceClass,
+				ArchitectureType: "standard",
+				NetworkType:      e.NetworkType,
+				VpcId:            e.VpcId,
+				VSwitchId:        e.VSwitchId,
+				EngineVersion:    e.EngineVersion,
+				Port:             e.Port,
+				ConnectionDomain: e.ConnectionDomain,
+				ChargeType:       e.ChargeType,
+				ReadOnlyCount:    e.ReadOnlyCount,
+				Config:           e.Config,
+			}, nil
+		}
+	}
+	for _, e := range s.clusters {
+		if e.InstanceName == name {
+			return &redisinstance.InstanceInfo{
+				InstanceId:       e.InstanceId,
+				InstanceStatus:   e.InstanceStatus,
+				InstanceClass:    e.InstanceClass,
+				ArchitectureType: "cluster",
+				NetworkType:      e.NetworkType,
+				VpcId:            e.VpcId,
+				VSwitchId:        e.VSwitchId,
+				EngineVersion:    e.EngineVersion,
+				Port:             e.Port,
+				ConnectionDomain: e.ConnectionDomain,
+				ChargeType:       e.ChargeType,
+				ShardCount:       e.ShardCount,
+				ReadOnlyCount:    e.ReplicasPerShard,
+				Config:           e.Config,
+			}, nil
+		}
+	}
+	return nil, nil
+}
+
 func (s *redisStore) describeInstance(ctx context.Context, instanceId string) (*redisinstance.InstanceInfo, error) {
 	if isContextCanceled(ctx) {
 		return nil, context.Canceled

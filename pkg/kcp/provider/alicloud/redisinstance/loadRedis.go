@@ -12,8 +12,8 @@ import (
 )
 
 // loadRedis fetches the r-kvstore instance state via DescribeInstance.
-// If the KCP RedisInstance has no Status.Id yet, the instance obviously
-// cannot exist on AliCloud so we skip the API call.
+// If the KCP RedisInstance has no Status.Id yet, falls back to a name-based
+// search to recover from crash-after-create-before-status-write scenarios.
 func loadRedis(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	logger := composed.LoggerFromCtx(ctx)
@@ -23,27 +23,43 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 	}
 
 	instanceId := state.ObjAsRedisInstance().Status.Id
-	if instanceId == "" {
+	if instanceId != "" {
+		info, err := state.client.DescribeInstance(ctx, instanceId)
+		if err != nil {
+			logger.Error(err, "Error describing AliCloud r-kvstore instance")
+			meta.SetStatusCondition(state.ObjAsRedisInstance().Conditions(), metav1.Condition{
+				Type:    cloudcontrolv1beta1.ConditionTypeError,
+				Status:  metav1.ConditionTrue,
+				Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisInstance,
+				Message: fmt.Sprintf("Failed loading AlicloudRedis: %s", err),
+			})
+			if updErr := state.UpdateObjStatus(ctx); updErr != nil {
+				return composed.LogErrorAndReturn(updErr,
+					"Error updating RedisInstance status after failed DescribeInstance",
+					composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
+			}
+			return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
+		}
+		state.instance = info
 		return nil, ctx
 	}
 
-	info, err := state.client.DescribeInstance(ctx, instanceId)
+	// No Status.Id yet — search by name to recover a previously created instance
+	// whose ID was not persisted (crash between CreateInstance and status write).
+	info, err := state.client.DescribeInstanceByName(ctx, state.ObjAsRedisInstance().Name)
 	if err != nil {
-		logger.Error(err, "Error describing AliCloud r-kvstore instance")
-		meta.SetStatusCondition(state.ObjAsRedisInstance().Conditions(), metav1.Condition{
-			Type:    cloudcontrolv1beta1.ConditionTypeError,
-			Status:  metav1.ConditionTrue,
-			Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisInstance,
-			Message: fmt.Sprintf("Failed loading AlicloudRedis: %s", err),
-		})
-		if updErr := state.UpdateObjStatus(ctx); updErr != nil {
-			return composed.LogErrorAndReturn(updErr,
-				"Error updating RedisInstance status after failed DescribeInstance",
-				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
-		}
+		logger.Error(err, "Error searching AliCloud r-kvstore instance by name")
 		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	}
-
-	state.instance = info
+	if info != nil {
+		logger.Info("Recovered AliCloud r-kvstore instance by name", "instanceId", info.InstanceId)
+		state.ObjAsRedisInstance().Status.Id = info.InstanceId
+		if updErr := state.UpdateObjStatus(ctx); updErr != nil {
+			return composed.LogErrorAndReturn(updErr,
+				"Error persisting recovered AliCloud r-kvstore instance ID",
+				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
+		}
+		state.instance = info
+	}
 	return nil, ctx
 }

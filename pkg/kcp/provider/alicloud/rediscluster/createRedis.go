@@ -88,6 +88,9 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 				"Error updating RedisCluster status after failed CreateInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 		}
+		if alicloudclient.IsPermanentError(err) {
+			return composed.StopAndForget, ctx
+		}
 		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 	}
 
