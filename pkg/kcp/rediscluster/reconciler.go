@@ -80,7 +80,7 @@ func (r *redisClusterReconciler) newAction() composed.Action {
 						composed.All(
 							statewithscope.AlicloudProviderPredicate,
 							func(ctx context.Context, st composed.State) bool {
-								return feature.Alicloud.Value(ctx)
+								return feature.AlicloudRedisCluster.Value(ctx)
 							},
 						),
 						alicloudrediscluster.New(r.alicloudStateFactory),
