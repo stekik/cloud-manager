@@ -16,6 +16,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
@@ -100,9 +101,28 @@ type ModifyInstanceSpecOptions struct {
 type Client interface {
 	CreateInstance(ctx context.Context, opts CreateInstanceOptions) (instanceId string, err error)
 	DescribeInstance(ctx context.Context, instanceId string) (*InstanceInfo, error)
+	// DescribeInstanceByName searches for an instance by exact name within the
+	// current region. Returns (nil, nil) when no matching instance is found.
+	// Used to recover from crash-after-create-before-status-write scenarios.
+	DescribeInstanceByName(ctx context.Context, name string) (*InstanceInfo, error)
 	ModifyInstanceSpec(ctx context.Context, instanceId string, opts ModifyInstanceSpecOptions) error
 	DeleteInstance(ctx context.Context, instanceId string) error
 	ResetAccountPassword(ctx context.Context, instanceId, accountName, password string) error
+}
+
+// IsPermanentError returns true for AliCloud SDK errors that will never
+// succeed on retry — specifically 4xx responses other than 429 (rate limit).
+// Callers should use StopAndForget for permanent errors instead of requeueing.
+func IsPermanentError(err error) bool {
+	var sdkErr *tea.SDKError
+	if errors.As(err, &sdkErr) {
+		if sdkErr.StatusCode == nil {
+			return false
+		}
+		code := tea.IntValue(sdkErr.StatusCode)
+		return code >= 400 && code < 500 && code != 429
+	}
+	return false
 }
 
 // ClientProvider is the standard cloud-manager credential/region-scoped
@@ -213,6 +233,29 @@ func (c *alicloudRedisClient) DescribeInstance(ctx context.Context, instanceId s
 		ReadOnlyCount:    tea.Int32Value(a.ReadOnlyCount),
 		Config:           tea.StringValue(a.Config),
 	}, nil
+}
+
+// DescribeInstanceByName searches for an instance by exact name. Returns
+// (nil, nil) when no matching instance is found.
+func (c *alicloudRedisClient) DescribeInstanceByName(ctx context.Context, name string) (*InstanceInfo, error) {
+	req := &rkvstore.DescribeInstancesRequest{
+		RegionId:  new(c.region),
+		SearchKey: new(name),
+	}
+	resp, err := c.c.DescribeInstances(req)
+	if err != nil {
+		return nil, fmt.Errorf("error describing alicloud r-kvstore instances by name %s: %w", name, err)
+	}
+	if resp == nil || resp.Body == nil || resp.Body.Instances == nil {
+		return nil, nil
+	}
+	for _, inst := range resp.Body.Instances.KVStoreInstance {
+		if tea.StringValue(inst.InstanceName) == name {
+			// DescribeInstances returns summary fields; do a full describe by ID.
+			return c.DescribeInstance(ctx, tea.StringValue(inst.InstanceId))
+		}
+	}
+	return nil, nil
 }
 
 // ModifyInstanceSpec scales an existing instance. Per issue #2012 design

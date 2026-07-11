@@ -20,6 +20,10 @@ func (c *redisInstanceClientView) DescribeInstance(ctx context.Context, instance
 	return c.describeInstance(ctx, instanceId)
 }
 
+func (c *redisInstanceClientView) DescribeInstanceByName(ctx context.Context, name string) (*redisinstance.InstanceInfo, error) {
+	return c.describeInstanceByName(ctx, name)
+}
+
 func (c *redisInstanceClientView) ModifyInstanceSpec(ctx context.Context, instanceId string, opts redisinstance.ModifyInstanceSpecOptions) error {
 	return c.modifyInstanceSpec(ctx, instanceId, opts)
 }
@@ -43,6 +47,10 @@ func (c *redisClusterClientView) CreateInstance(ctx context.Context, opts redisi
 
 func (c *redisClusterClientView) DescribeInstance(ctx context.Context, instanceId string) (*redisinstance.InstanceInfo, error) {
 	return c.describeInstance(ctx, instanceId)
+}
+
+func (c *redisClusterClientView) DescribeInstanceByName(ctx context.Context, name string) (*redisinstance.InstanceInfo, error) {
+	return c.describeInstanceByName(ctx, name)
 }
 
 func (c *redisClusterClientView) ModifyInstanceSpec(ctx context.Context, instanceId string, opts redisinstance.ModifyInstanceSpecOptions) error {

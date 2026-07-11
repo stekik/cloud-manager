@@ -70,7 +70,17 @@ func vSwitchCreate(ctx context.Context, st composed.State) (error, context.Conte
 		vSwitchId, err := state.client.CreateVSwitch(ctx, state.vpcId, zoneName, zoneCidr, name)
 		if err != nil {
 			logger.Error(err, "Error creating AliCloud VSwitch for IpRange")
-			return composed.StopWithRequeue, ctx
+			state.ObjAsIpRange().Status.State = cloudcontrolv1beta1.StateError
+			return composed.PatchStatus(state.ObjAsIpRange()).
+				SetExclusiveConditions(metav1.Condition{
+					Type:    cloudcontrolv1beta1.ConditionTypeError,
+					Status:  metav1.ConditionTrue,
+					Reason:  cloudcontrolv1beta1.ReasonCloudProviderError,
+					Message: fmt.Sprintf("Error creating VSwitch: %s", err),
+				}).
+				ErrorLogMessage("Error patching AliCloud KCP IpRange status after failed VSwitch create").
+				SuccessError(composed.StopWithRequeue).
+				Run(ctx, state)
 		}
 
 		state.vSwitches = append(state.vSwitches, &alicloudiprangeclient.VSwitchInfo{
