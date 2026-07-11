@@ -84,7 +84,7 @@ func (r *redisInstanceReconciler) newAction() composed.Action {
 						composed.All(
 							statewithscope.AlicloudProviderPredicate,
 							func(ctx context.Context, st composed.State) bool {
-								return feature.Alicloud.Value(ctx)
+								return feature.AlicloudRedisInstance.Value(ctx)
 							},
 						),
 						alicloudredisinstance.New(r.alicloudStateFactory),
