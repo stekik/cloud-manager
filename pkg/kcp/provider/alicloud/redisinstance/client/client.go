@@ -106,6 +106,9 @@ type Client interface {
 	// Used to recover from crash-after-create-before-status-write scenarios.
 	DescribeInstanceByName(ctx context.Context, name string) (*InstanceInfo, error)
 	ModifyInstanceSpec(ctx context.Context, instanceId string, opts ModifyInstanceSpecOptions) error
+	// ModifyInstanceConfig applies runtime configuration parameters encoded as
+	// a JSON string (e.g. `{"maxmemory-policy":"noeviction"}`).
+	ModifyInstanceConfig(ctx context.Context, instanceId, config string) error
 	DeleteInstance(ctx context.Context, instanceId string) error
 	ResetAccountPassword(ctx context.Context, instanceId, accountName, password string) error
 }
@@ -308,6 +311,19 @@ func (c *alicloudRedisClient) ResetAccountPassword(ctx context.Context, instance
 	}
 	if _, err := c.c.ResetAccountPassword(req); err != nil {
 		return fmt.Errorf("error resetting password for alicloud r-kvstore instance %s account %s: %w", instanceId, accountName, err)
+	}
+	return nil
+}
+
+// ModifyInstanceConfig applies runtime configuration parameters to an existing
+// instance. config must be a JSON object string as required by the AliCloud API.
+func (c *alicloudRedisClient) ModifyInstanceConfig(ctx context.Context, instanceId, config string) error {
+	req := &rkvstore.ModifyInstanceConfigRequest{
+		InstanceId: new(instanceId),
+		Config:     new(config),
+	}
+	if _, err := c.c.ModifyInstanceConfig(req); err != nil {
+		return fmt.Errorf("error modifying alicloud r-kvstore instance %s config: %w", instanceId, err)
 	}
 	return nil
 }

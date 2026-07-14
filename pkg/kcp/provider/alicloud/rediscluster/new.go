@@ -46,6 +46,7 @@ func New(stateFactory StateFactory) composed.Action {
 					waitRedisAvailable,
 					modifyReplicasPerShard,
 					waitRedisAvailable,
+					modifyParameters,
 					updateStatus,
 				),
 			),

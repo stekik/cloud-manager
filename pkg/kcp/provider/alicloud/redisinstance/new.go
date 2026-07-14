@@ -41,6 +41,7 @@ func New(stateFactory StateFactory) composed.Action {
 					createRedis,
 					waitRedisAvailable,
 					modifyInstanceClass,
+					modifyParameters,
 					updateStatus,
 				),
 			),
