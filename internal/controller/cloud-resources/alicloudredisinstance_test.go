@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 var _ = Describe("Feature: SKR AlicloudRedisInstance", func() {
@@ -153,6 +154,112 @@ var _ = Describe("Feature: SKR AlicloudRedisInstance", func() {
 		By("And Then SKR auth Secret is deleted", func() {
 			Eventually(IsDeleted).
 				WithArguments(infra.Ctx(), infra.SKR().Client(), authSecret).
+				Should(Succeed())
+		})
+	})
+
+	It("Scenario: SKR AlicloudRedisInstance redisTier is changed (S→P upgrade)", func() {
+
+		skrIpRangeName := uuid.NewString()
+		skrIpRange := &cloudresourcesv1beta1.IpRange{}
+		skrIpRangeId := uuid.NewString()
+
+		By("And Given SKR IpRange exists", func() {
+			skriprange.Ignore.AddName(skrIpRangeName)
+			Eventually(CreateSkrIpRange).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
+					WithName(skrIpRangeName),
+				).Should(Succeed())
+		})
+
+		By("And Given SKR IpRange has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
+					WithSkrIpRangeStatusCidr(skrIpRange.Spec.Cidr),
+					WithSkrIpRangeStatusId(skrIpRangeId),
+					WithConditions(SkrReadyCondition()),
+				).Should(Succeed())
+		})
+
+		alicloudRedisInstanceName := uuid.NewString()
+		alicloudRedisInstance := &cloudresourcesv1beta1.AlicloudRedisInstance{}
+
+		By("When AlicloudRedisInstance is created with tier S1", func() {
+			Eventually(CreateAlicloudRedisInstance).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					WithName(alicloudRedisInstanceName),
+					WithIpRange(skrIpRange.Name),
+					WithAlicloudRedisInstanceRedisTier(cloudresourcesv1beta1.AlicloudRedisTierS1),
+					WithAlicloudRedisInstanceEngineVersion("7.0"),
+				).Should(Succeed())
+		})
+
+		kcpRedisInstance := &cloudcontrolv1beta1.RedisInstance{}
+
+		By("Then KCP RedisInstance is created with S1 spec", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					NewObjActions(),
+					HavingFieldSet("status", "id"),
+				).Should(Succeed())
+
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisInstance,
+					NewObjActions(WithName(alicloudRedisInstance.Status.Id)),
+				).Should(Succeed())
+
+			Expect(kcpRedisInstance.Spec.Instance.Alicloud.InstanceClass).To(Equal("redis.master.small.default"))
+			Expect(kcpRedisInstance.Spec.Instance.Alicloud.ReadOnlyCount).To(Equal(int32(0)))
+		})
+
+		By("And Given KCP RedisInstance has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisInstance,
+					WithRedisInstancePrimaryEndpoint("r-modify-test.redis.rds.aliyuncs.com:6379"),
+					WithRedisInstanceAuthString(uuid.NewString()),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		By("And Given SKR AlicloudRedisInstance is Ready", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					NewObjActions(),
+					HavingConditionTrue(cloudresourcesv1beta1.ConditionTypeReady),
+				).Should(Succeed())
+		})
+
+		By("When redisTier is changed to P2", func() {
+			Eventually(func() error {
+				if err := infra.SKR().Client().Get(infra.Ctx(),
+					client.ObjectKeyFromObject(alicloudRedisInstance), alicloudRedisInstance); err != nil {
+					return err
+				}
+				alicloudRedisInstance.Spec.RedisTier = cloudresourcesv1beta1.AlicloudRedisTierP2
+				return infra.SKR().Client().Update(infra.Ctx(), alicloudRedisInstance)
+			}).Should(Succeed())
+		})
+
+		By("Then KCP RedisInstance spec is updated with P2 instanceClass and readOnlyCount=1", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisInstance,
+					NewObjActions(),
+					HavingFieldValue("redis.master.mid.default", "spec", "instance", "alicloud", "instanceClass"),
+					HavingFieldValue(int32(1), "spec", "instance", "alicloud", "readOnlyCount"),
+				).Should(Succeed())
+		})
+
+		// DELETE
+
+		By("When AlicloudRedisInstance is deleted", func() {
+			Eventually(Delete).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance).
+				Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisInstance does not exist", func() {
+			Eventually(IsDeleted).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance).
 				Should(Succeed())
 		})
 	})
