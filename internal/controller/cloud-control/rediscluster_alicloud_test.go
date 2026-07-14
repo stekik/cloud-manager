@@ -231,4 +231,122 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 				Should(Succeed())
 		})
 	})
+
+	It("Scenario: KCP AliCloud RedisCluster replicasPerShard drift is reconciled", func() {
+
+		alicloudAccount := infra.AlicloudMock().NewAccount()
+		defer alicloudAccount.Delete()
+
+		name := "c9d0e1f2-a3b4-5678-cdef-678901234567"
+		scope := &cloudcontrolv1beta1.Scope{}
+
+		By("Given Scope exists", func() {
+			kcpscope.Ignore.AddName(name)
+			Eventually(CreateScopeAlicloud).
+				WithArguments(infra.Ctx(), infra, scope, alicloudAccount.Credentials().AccessKeyId, WithName(name)).
+				Should(Succeed())
+		})
+
+		kcpIpRangeName := "d0e1f2a3-b4c5-6789-def0-789012345678"
+		kcpIpRange := &cloudcontrolv1beta1.IpRange{}
+		kcpiprange.Ignore.AddName(kcpIpRangeName)
+
+		By("And Given KCP IPRange exists", func() {
+			Eventually(CreateKcpIpRange).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
+					WithName(kcpIpRangeName),
+					WithScope(scope.Name),
+				).Should(Succeed())
+		})
+
+		By("And Given KCP IpRange has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
+					WithKcpIpRangeStatusCidr(kcpIpRange.Spec.Cidr),
+					WithKcpIpRangeStatusVpcId("vpc-alicloud-test-05"),
+					WithKcpIpRangeStatusSubnets(cloudcontrolv1beta1.IpRangeSubnet{
+						Id:   "vsw-alicloud-test-05",
+						Zone: "cn-hangzhou-a",
+					}),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		redisCluster := &cloudcontrolv1beta1.RedisCluster{}
+
+		By("And Given RedisCluster is created with replicasPerShard=1", func() {
+			Eventually(CreateRedisCluster).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					WithName(name),
+					WithRemoteRef("skr-alicloud-cluster-replica-drift"),
+					WithIpRange(kcpIpRangeName),
+					WithScope(name),
+					WithRedisClusterAlicloud(),
+					WithKcpAlicloudRedisClusterInstanceClass("redis.shard.large.ce"),
+					WithKcpAlicloudRedisEngineVersion("7.0"),
+					WithKcpAlicloudRedisClusterShardCount(2),
+					WithKcpAlicloudRedisClusterReplicasPerShard(1),
+				).Should(Succeed())
+		})
+
+		alicloudMock := alicloudAccount.Region(scope.Spec.Region)
+
+		By("And Given RedisCluster gets its ID", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingFieldSet("status", "id"),
+				).Should(Succeed())
+		})
+
+		By("And Given AliCloud Redis is Normal", func() {
+			alicloudMock.TransitionAllToNormal()
+		})
+
+		By("And Given RedisCluster is Ready", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
+					HavingState("Ready"),
+				).Should(Succeed())
+		})
+
+		By("When replicasPerShard is changed to 0", func() {
+			Eventually(func() error {
+				if err := infra.KCP().Client().Get(infra.Ctx(),
+					client.ObjectKeyFromObject(redisCluster), redisCluster); err != nil {
+					return err
+				}
+				redisCluster.Spec.Instance.Alicloud.ReplicasPerShard = 0
+				return infra.KCP().Client().Update(infra.Ctx(), redisCluster)
+			}).Should(Succeed())
+		})
+
+		By("Then AliCloud transitions to Changing and back to Normal with updated replicasPerShard", func() {
+			Eventually(func() error {
+				alicloudMock.TransitionAllToNormal()
+				return LoadAndCheck(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
+					HavingState("Ready"),
+					HavingFieldValue(int32(0), "status", "replicasPerShard"),
+				)
+			}).Should(Succeed(), "expected RedisCluster to reach Ready with replicasPerShard=0")
+		})
+
+		// DELETE
+
+		By("When RedisCluster is deleted", func() {
+			Eventually(Delete).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster).
+				Should(Succeed())
+		})
+
+		By("Then RedisCluster does not exist", func() {
+			Eventually(IsDeleted, 5*time.Second).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster).
+				Should(Succeed())
+		})
+	})
 })
