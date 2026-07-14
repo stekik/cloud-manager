@@ -28,6 +28,10 @@ func (c *redisInstanceClientView) ModifyInstanceSpec(ctx context.Context, instan
 	return c.modifyInstanceSpec(ctx, instanceId, opts)
 }
 
+func (c *redisInstanceClientView) ModifyInstanceConfig(ctx context.Context, instanceId, config string) error {
+	return c.modifyInstanceConfig(ctx, instanceId, config)
+}
+
 func (c *redisInstanceClientView) DeleteInstance(ctx context.Context, instanceId string) error {
 	return c.deleteInstance(ctx, instanceId)
 }
@@ -55,6 +59,10 @@ func (c *redisClusterClientView) DescribeInstanceByName(ctx context.Context, nam
 
 func (c *redisClusterClientView) ModifyInstanceSpec(ctx context.Context, instanceId string, opts redisinstance.ModifyInstanceSpecOptions) error {
 	return c.modifyInstanceSpec(ctx, instanceId, opts)
+}
+
+func (c *redisClusterClientView) ModifyInstanceConfig(ctx context.Context, instanceId, config string) error {
+	return c.modifyInstanceConfig(ctx, instanceId, config)
 }
 
 func (c *redisClusterClientView) DeleteInstance(ctx context.Context, instanceId string) error {

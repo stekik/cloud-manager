@@ -365,6 +365,23 @@ func (s *redisStore) resetAccountPassword(ctx context.Context, instanceId, accou
 	return fmt.Errorf("instance %s not found", instanceId)
 }
 
+func (s *redisStore) modifyInstanceConfig(ctx context.Context, instanceId, config string) error {
+	if isContextCanceled(ctx) {
+		return context.Canceled
+	}
+	s.m.Lock()
+	defer s.m.Unlock()
+	if e := s.instances[instanceId]; e != nil {
+		e.Config = config
+		return nil
+	}
+	if e := s.clusters[instanceId]; e != nil {
+		e.Config = config
+		return nil
+	}
+	return fmt.Errorf("instance %s not found", instanceId)
+}
+
 // === Cluster-client ops (add/delete shards, absolute target) ================
 
 func (s *redisStore) addShardingNode(ctx context.Context, instanceId string, targetShardCount int32) error {
