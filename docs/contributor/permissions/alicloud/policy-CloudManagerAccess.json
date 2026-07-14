@@ -9,15 +9,20 @@
         "r-kvstore:DeleteInstance",
         "r-kvstore:DeleteShardingNode",
         "r-kvstore:DescribeInstanceAttribute",
+        "r-kvstore:DescribeInstances",
+        "r-kvstore:ModifyInstanceConfig",
         "r-kvstore:ModifyInstanceSpec",
         "r-kvstore:ResetAccountPassword",
+        "vpc:AssociateVpcCidrBlock",
         "vpc:CreateVSwitch",
         "vpc:CreateVpc",
         "vpc:DeleteVSwitch",
         "vpc:DeleteVpc",
+        "vpc:DescribeVpcAttribute",
         "vpc:DescribeVSwitches",
         "vpc:DescribeVpcs",
-        "vpc:DescribeZones"
+        "vpc:DescribeZones",
+        "vpc:UnassociateVpcCidrBlock"
       ],
       "Resource": "*"
     }
