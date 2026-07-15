@@ -128,6 +128,28 @@ func IsPermanentError(err error) bool {
 	return false
 }
 
+// IsVSwitchZoneErr returns true when AliCloud rejects a CreateInstance call
+// because the selected vSwitch's zone does not support the requested instance
+// class. The caller should retry with a different vSwitch from another zone.
+func IsVSwitchZoneErr(err error) bool {
+	var sdkErr *tea.SDKError
+	if errors.As(err, &sdkErr) && sdkErr.Code != nil {
+		return tea.StringValue(sdkErr.Code) == "InvalidvSwitchId"
+	}
+	return false
+}
+
+// IsNotFoundErr returns true when AliCloud reports the instance ID does not
+// exist (404 InvalidInstanceId.NotFound). Callers should treat this as
+// "instance already gone" rather than a transient error.
+func IsNotFoundErr(err error) bool {
+	var sdkErr *tea.SDKError
+	if errors.As(err, &sdkErr) && sdkErr.Code != nil {
+		return tea.StringValue(sdkErr.Code) == "InvalidInstanceId.NotFound"
+	}
+	return false
+}
+
 // ClientProvider is the standard cloud-manager credential/region-scoped
 // constructor signature used across all AliCloud client packages.
 type ClientProvider func(ctx context.Context, region, accessKeyId, accessKeySecret string) (Client, error)
