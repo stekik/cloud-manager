@@ -21,6 +21,11 @@ func deleteRedis(ctx context.Context, st composed.State) (error, context.Context
 	if state.instance.InstanceStatus == alicloudclient.InstanceStatusReleased {
 		return nil, ctx
 	}
+	// AliCloud rejects DeleteInstance while the instance is still being created.
+	// Wait for it to reach Normal before issuing the delete.
+	if state.instance.InstanceStatus == alicloudclient.InstanceStatusCreating {
+		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
+	}
 
 	if err := state.client.DeleteInstance(ctx, state.instance.InstanceId); err != nil {
 		logger.Error(err, "Error deleting AliCloud r-kvstore instance")
