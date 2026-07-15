@@ -22,9 +22,6 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 		return nil, ctx
 	}
 	desired := kcp.Spec.Instance.Alicloud.Parameters
-	if len(desired) == 0 {
-		return nil, ctx
-	}
 
 	// Parse current config from instance so we can compare.
 	current := map[string]string{}
@@ -35,7 +32,12 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 		}
 	}
 
+	// No change needed when desired equals current (including both empty).
 	if current != nil && reflect.DeepEqual(current, desired) {
+		return nil, ctx
+	}
+	// Nothing to clear if both are empty.
+	if len(desired) == 0 && len(current) == 0 {
 		return nil, ctx
 	}
 
