@@ -20,8 +20,8 @@ package v1beta1
 // HA instance in the KCP RedisInstance CRD.
 //
 // InstanceClass is the AliCloud r-kvstore instance class string
-// (e.g. "redis.master.large.default"). It is resolved by the SKR reconciler
-// from the SKR-side redisTier abstraction.
+// (e.g. "tair.rdb.4g"). It is resolved by the SKR reconciler from the
+// SKR-side redisTier abstraction.
 //
 // ReadOnlyCount encodes the service tier: 0 = S tier (no read-only replica),
 // 1 = P tier (one read-only replica). Both InstanceClass and ReadOnlyCount are
@@ -30,14 +30,11 @@ type RedisInstanceAlicloud struct {
 	// +kubebuilder:validation:Required
 	InstanceClass string `json:"instanceClass"`
 
-	// EngineVersion is set at creation and can only be upgraded (not downgraded)
-	// via ModifyInstanceMajorVersion. "4.0" reached end-of-life July 2025.
+	// EngineVersion is set at creation and is immutable.
 	// +optional
 	// +kubebuilder:default="7.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
-	// +kubebuilder:validation:XValidation:rule=(self != "5.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
+	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
 	EngineVersion string `json:"engineVersion"`
 
 	// ReadOnlyCount: 0 = S tier (no read replica), 1 = P tier (one read replica).
@@ -67,14 +64,11 @@ type RedisClusterAlicloud struct {
 	// +kubebuilder:validation:Required
 	InstanceClass string `json:"instanceClass"`
 
-	// EngineVersion is set at creation and can only be upgraded (not downgraded)
-	// via ModifyInstanceMajorVersion.
+	// EngineVersion is set at creation and is immutable.
 	// +optional
 	// +kubebuilder:default="7.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
-	// +kubebuilder:validation:XValidation:rule=(self != "5.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
+	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
 	EngineVersion string `json:"engineVersion"`
 
 	// ShardCount is the number of data shards in the cluster.
