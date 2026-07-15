@@ -4,12 +4,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	alicloudiprangeclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/iprange/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+func isVSwitchCidrOverlapErr(err error) bool {
+	return err != nil && strings.Contains(err.Error(), "InvalidCidrBlock.Overlapped")
+}
 
 func vSwitchCreate(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
@@ -69,6 +74,16 @@ func vSwitchCreate(ctx context.Context, st composed.State) (error, context.Conte
 
 		vSwitchId, err := state.client.CreateVSwitch(ctx, state.vpcId, zoneName, zoneCidr, name)
 		if err != nil {
+			if isVSwitchCidrOverlapErr(err) {
+				// CIDR already used by an existing vSwitch — look it up by name instead of failing.
+				existing, lookupErr := state.client.DescribeVSwitchesByName(ctx, state.vpcId, name)
+				if lookupErr == nil && len(existing) > 0 {
+					logger.Info("AliCloud VSwitch already exists, reusing", "vSwitchId", existing[0].VSwitchId, "zone", zoneName)
+					state.vSwitches = append(state.vSwitches, &existing[0])
+					anyCreated = true
+					continue
+				}
+			}
 			logger.Error(err, "Error creating AliCloud VSwitch for IpRange")
 			state.ObjAsIpRange().Status.State = cloudcontrolv1beta1.StateError
 			return composed.PatchStatus(state.ObjAsIpRange()).
