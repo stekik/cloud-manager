@@ -2,7 +2,9 @@ package redisinstance
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
+	"math/rand"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
@@ -11,6 +13,24 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// alicloudPassword generates a 32-char password satisfying AliCloud r-kvstore
+// requirements: uppercase, lowercase, and digit characters required.
+func alicloudPassword() string {
+	const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+	const lower = "abcdefghijklmnopqrstuvwxyz"
+	const digits = "0123456789"
+	const all = upper + lower + digits
+	b := make([]byte, 32)
+	b[0] = upper[rand.Intn(len(upper))]
+	b[1] = lower[rand.Intn(len(lower))]
+	b[2] = digits[rand.Intn(len(digits))]
+	for i := 3; i < 32; i++ {
+		b[i] = all[rand.Intn(len(all))]
+	}
+	rand.Shuffle(len(b), func(i, j int) { b[i], b[j] = b[j], b[i] })
+	return string(b)
+}
 
 // createRedis provisions a new r-kvstore instance if one does not yet exist.
 // The password is generated here and stored immediately on Status.AuthString
@@ -37,14 +57,14 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
 	}
 
-	vSwitchId := ""
+	// Collect candidate vSwitch IDs from all IpRange subnets.
+	var vSwitchIds []string
 	for _, sn := range state.IpRange().Status.Subnets {
 		if sn.Id != "" {
-			vSwitchId = sn.Id
-			break
+			vSwitchIds = append(vSwitchIds, sn.Id)
 		}
 	}
-	if vSwitchId == "" {
+	if len(vSwitchIds) == 0 {
 		return composed.LogErrorAndReturn(
 			fmt.Errorf("no vSwitch found in IpRange subnets"),
 			"AliCloud redisinstance IpRange has no vSwitch",
@@ -57,7 +77,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	// idempotency Token returns the same instance; we must not regenerate).
 	password := kcp.Status.AuthString
 	if password == "" {
-		password = util.RandomString(32)
+		password = alicloudPassword()
 		kcp.Status.AuthString = password
 		if err := state.UpdateObjStatus(ctx); err != nil {
 			return composed.LogErrorAndReturn(err,
@@ -66,19 +86,45 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		}
 	}
 
-	opts := alicloudclient.CreateInstanceOptions{
-		InstanceName:  kcp.Name,
-		InstanceClass: kcp.Spec.Instance.Alicloud.InstanceClass,
-		EngineVersion: kcp.Spec.Instance.Alicloud.EngineVersion,
-		VpcId:         state.IpRange().Status.VpcId,
-		VSwitchId:     vSwitchId,
-		Password:      password,
-		ReadOnlyCount: kcp.Spec.Instance.Alicloud.ReadOnlyCount,
-		Token:         string(kcp.UID),
+	// Try each vSwitch in turn. Some instance classes are only available in
+	// specific zones; AliCloud returns InvalidvSwitchId when the zone does not
+	// support the requested class. Iterating all subnets lets the reconciler
+	// find a compatible zone without requiring the user to specify one.
+	var instanceId string
+	var lastErr error
+	for _, vSwitchId := range vSwitchIds {
+		// Include vSwitchId in the token so each (class, vSwitch) pair has its
+		// own idempotency token — AliCloud rejects same token with different params.
+		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId
+		tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(tokenInput)))[:32]
+
+		opts := alicloudclient.CreateInstanceOptions{
+			InstanceName:  kcp.Name,
+			InstanceClass: kcp.Spec.Instance.Alicloud.InstanceClass,
+			EngineVersion: kcp.Spec.Instance.Alicloud.EngineVersion,
+			VpcId:         state.IpRange().Status.VpcId,
+			VSwitchId:     vSwitchId,
+			Password:      password,
+			ReadOnlyCount: kcp.Spec.Instance.Alicloud.ReadOnlyCount,
+			Token:         tokenHash,
+		}
+		var err error
+		instanceId, err = state.client.CreateInstance(ctx, opts)
+		if err == nil {
+			lastErr = nil
+			break
+		}
+		lastErr = err
+		if alicloudclient.IsVSwitchZoneErr(err) {
+			logger.Info("AliCloud r-kvstore: vSwitch zone not supported for instance class, trying next", "vSwitchId", vSwitchId, "instanceClass", kcp.Spec.Instance.Alicloud.InstanceClass)
+			continue
+		}
+		// Non-zone error — stop iterating and handle below.
+		break
 	}
 
-	instanceId, err := state.client.CreateInstance(ctx, opts)
-	if err != nil {
+	if lastErr != nil {
+		err := lastErr
 		logger.Error(err, "Error creating AliCloud r-kvstore instance")
 		meta.SetStatusCondition(kcp.Conditions(), metav1.Condition{
 			Type:    cloudcontrolv1beta1.ConditionTypeError,
