@@ -6,6 +6,7 @@ import (
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,6 +27,18 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 	if instanceId != "" {
 		info, err := state.client.DescribeInstance(ctx, instanceId)
 		if err != nil {
+			if alicloudclient.IsNotFoundErr(err) {
+				// Instance no longer exists on AliCloud — clear the stale ID so the
+				// create path can re-provision (or delete path can skip cleanly).
+				logger.Info("AliCloud r-kvstore instance not found, clearing stale ID", "instanceId", instanceId)
+				state.ObjAsRedisInstance().Status.Id = ""
+				if updErr := state.UpdateObjStatus(ctx); updErr != nil {
+					return composed.LogErrorAndReturn(updErr,
+						"Error clearing stale AliCloud r-kvstore instance ID",
+						composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
+				}
+				return nil, ctx
+			}
 			logger.Error(err, "Error describing AliCloud r-kvstore instance")
 			meta.SetStatusCondition(state.ObjAsRedisInstance().Conditions(), metav1.Condition{
 				Type:    cloudcontrolv1beta1.ConditionTypeError,
