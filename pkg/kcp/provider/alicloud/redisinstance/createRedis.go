@@ -2,9 +2,10 @@ package redisinstance
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"math/rand"
+	"math/big"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
@@ -21,14 +22,31 @@ func alicloudPassword() string {
 	const lower = "abcdefghijklmnopqrstuvwxyz"
 	const digits = "0123456789"
 	const all = upper + lower + digits
-	b := make([]byte, 32)
-	b[0] = upper[rand.Intn(len(upper))]
-	b[1] = lower[rand.Intn(len(lower))]
-	b[2] = digits[rand.Intn(len(digits))]
-	for i := 3; i < 32; i++ {
-		b[i] = all[rand.Intn(len(all))]
+
+	randChar := func(charset string) byte {
+		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
+		if err != nil {
+			panic(fmt.Sprintf("crypto/rand failure: %v", err))
+		}
+		return charset[n.Int64()]
 	}
-	rand.Shuffle(len(b), func(i, j int) { b[i], b[j] = b[j], b[i] })
+
+	b := make([]byte, 32)
+	b[0] = randChar(upper)
+	b[1] = randChar(lower)
+	b[2] = randChar(digits)
+	for i := 3; i < 32; i++ {
+		b[i] = randChar(all)
+	}
+	// Fisher-Yates shuffle using crypto/rand.
+	for i := len(b) - 1; i > 0; i-- {
+		jBig, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
+		if err != nil {
+			panic(fmt.Sprintf("crypto/rand failure: %v", err))
+		}
+		j := int(jBig.Int64())
+		b[i], b[j] = b[j], b[i]
+	}
 	return string(b)
 }
 
@@ -92,6 +110,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	// find a compatible zone without requiring the user to specify one.
 	var instanceId string
 	var lastErr error
+	allZonesFailed := true
 	for _, vSwitchId := range vSwitchIds {
 		// Include vSwitchId in the token so each (class, vSwitch) pair has its
 		// own idempotency token — AliCloud rejects same token with different params.
@@ -112,6 +131,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		instanceId, err = state.client.CreateInstance(ctx, opts)
 		if err == nil {
 			lastErr = nil
+			allZonesFailed = false
 			break
 		}
 		lastErr = err
@@ -120,6 +140,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			continue
 		}
 		// Non-zone error — stop iterating and handle below.
+		allZonesFailed = false
 		break
 	}
 
@@ -136,6 +157,11 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			return composed.LogErrorAndReturn(updErr,
 				"Error updating RedisInstance status after failed CreateInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
+		}
+		// When every zone rejected the instance class, don't give up permanently —
+		// the user may add subnets in a compatible zone later.
+		if allZonesFailed {
+			return composed.StopWithRequeueDelay(util.Timing.T300000ms()), ctx
 		}
 		if alicloudclient.IsPermanentError(err) {
 			return composed.StopAndForget, ctx
