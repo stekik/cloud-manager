@@ -90,11 +90,14 @@ type CreateInstanceOptions struct {
 
 // ModifyInstanceSpecOptions covers the ModifyInstanceSpec request surface
 // used by the cloud-manager reconcilers. Fields set to zero value are omitted
-// from the request.
+// from the request. ReadOnlyCount uses a pointer so that zero (transition P→S)
+// can be distinguished from "not provided".
 type ModifyInstanceSpecOptions struct {
 	InstanceClass string
 	ShardCount    int32
-	ReadOnlyCount int32
+	// ReadOnlyCount is nil when the caller does not want to change the replica
+	// count. Use tea.Int32(0) to explicitly set zero (P→S transition).
+	ReadOnlyCount *int32
 }
 
 // Client is the AliCloud r-kvstore standard-instance client contract.
@@ -308,11 +311,9 @@ func (c *alicloudRedisClient) ModifyInstanceSpec(ctx context.Context, instanceId
 	if opts.ShardCount > 0 {
 		req.ShardCount = new(opts.ShardCount)
 	}
-	// ReadOnlyCount = 0 is a valid target (transition P→S), so we always send
-	// it when the caller explicitly opts in via a non-negative value. To
-	// distinguish "unset" from "zero" callers should call this method only
-	// when they know a change is required.
-	req.ReadOnlyCount = new(opts.ReadOnlyCount)
+	if opts.ReadOnlyCount != nil {
+		req.ReadOnlyCount = opts.ReadOnlyCount
+	}
 
 	if _, err := c.c.ModifyInstanceSpec(req); err != nil {
 		return fmt.Errorf("error modifying alicloud r-kvstore instance %s: %w", instanceId, err)

@@ -3,6 +3,7 @@ package redisinstance
 import (
 	"context"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -31,11 +32,16 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 		return nil, ctx
 	}
 
-	opts := alicloudclient.ModifyInstanceSpecOptions{
-		ReadOnlyCount: desiredReadOnly,
-	}
+	opts := alicloudclient.ModifyInstanceSpecOptions{}
 	if classDrift {
 		opts.InstanceClass = desiredClass
+	}
+	// Only include ReadOnlyCount when it has actually drifted. Some instance
+	// classes (e.g. tair.rdb.*) reject any ReadOnlyCount value via API
+	// (COMMODITY.INVALID_COMPONENT), so sending it unconditionally would break
+	// every class-only modification on those classes.
+	if readOnlyDrift {
+		opts.ReadOnlyCount = tea.Int32(desiredReadOnly)
 	}
 
 	if err := state.client.ModifyInstanceSpec(ctx, state.instance.InstanceId, opts); err != nil {
