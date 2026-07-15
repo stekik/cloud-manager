@@ -4,6 +4,15 @@
     {
       "Effect": "Allow",
       "Action": [
+        "kvstore:AddShardingNode",
+        "kvstore:CreateInstance",
+        "kvstore:DeleteInstance",
+        "kvstore:DeleteShardingNode",
+        "kvstore:DescribeInstanceAttribute",
+        "kvstore:DescribeInstances",
+        "kvstore:ModifyInstanceConfig",
+        "kvstore:ModifyInstanceSpec",
+        "kvstore:ResetAccountPassword",
         "r-kvstore:AddShardingNode",
         "r-kvstore:CreateInstance",
         "r-kvstore:DeleteInstance",
