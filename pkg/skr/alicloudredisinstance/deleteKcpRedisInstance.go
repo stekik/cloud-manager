@@ -23,7 +23,7 @@ func deleteKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 
 	redisInstance := state.ObjAsAlicloudRedisInstance()
 
-	err, _ := composed.UpdateStatus(redisInstance).
+	err, ctx := composed.UpdateStatus(redisInstance).
 		SetCondition(metav1.Condition{
 			Type:    cloudresourcesv1beta1.ConditionTypeDeleting,
 			Status:  metav1.ConditionTrue,

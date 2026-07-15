@@ -7,6 +7,11 @@ import (
 	"github.com/kyma-project/cloud-manager/pkg/util"
 )
 
+// waitAuthSecretDeleted re-checks state.AuthSecret which is reloaded from the
+// cluster on every reconcile cycle by loadAuthSecret earlier in the pipeline.
+// "Waiting" here means the reconcile terminates and re-runs; it does not poll
+// in-process. The secret is considered gone when loadAuthSecret sets
+// state.AuthSecret = nil (i.e. Get returns NotFound).
 func waitAuthSecretDeleted(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	logger := composed.LoggerFromCtx(ctx)
@@ -18,5 +23,5 @@ func waitAuthSecretDeleted(ctx context.Context, st composed.State) (error, conte
 
 	logger.Info("Waiting for Auth Secret to be deleted")
 
-	return composed.StopWithRequeueDelay(2 * util.Timing.T100ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), nil
 }
