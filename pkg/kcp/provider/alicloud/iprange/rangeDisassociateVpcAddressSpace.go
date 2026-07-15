@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	ipclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/iprange/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -23,17 +22,6 @@ func rangeDisassociateVpcAddressSpace(ctx context.Context, st composed.State) (e
 
 	if !slices.Contains(state.secondaryCidrBlocks, cidr) {
 		return nil, ctx
-	}
-
-	// If we already set the CidrInUse error on a previous reconcile, don't call the
-	// cloud API again — just wait. Status.State is reliably cache-consistent even on
-	// watch-event-driven re-reconciles because the informer reflects it after the
-	// first successful patch.
-	if state.ObjAsIpRange().Status.State == cloudcontrolv1beta1.StateError {
-		existing := meta.FindStatusCondition(state.ObjAsIpRange().Status.Conditions, cloudcontrolv1beta1.ConditionTypeError)
-		if existing != nil && existing.Reason == cloudcontrolv1beta1.ReasonFailedDisassociatingVpcAddressSpace {
-			return composed.StopWithRequeueDelay(util.Timing.T300000ms()), ctx
-		}
 	}
 
 	logger.Info("Disassociating secondary CIDR block from AliCloud VPC", "vpcId", state.vpcId, "cidr", cidr)
