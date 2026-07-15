@@ -3,6 +3,7 @@ package rediscluster
 import (
 	"context"
 
+	"github.com/alibabacloud-go/tea/tea"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -30,7 +31,7 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 	}
 
 	opts := alicloudclient.ModifyInstanceSpecOptions{
-		ReadOnlyCount: desiredReplicas,
+		ReadOnlyCount: tea.Int32(desiredReplicas),
 	}
 	if classDrift {
 		opts.InstanceClass = desiredClass

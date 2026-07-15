@@ -307,7 +307,9 @@ func (s *redisStore) modifyInstanceSpec(ctx context.Context, instanceId string, 
 		if opts.InstanceClass != "" {
 			e.InstanceClass = opts.InstanceClass
 		}
-		e.ReadOnlyCount = opts.ReadOnlyCount
+		if opts.ReadOnlyCount != nil {
+			e.ReadOnlyCount = *opts.ReadOnlyCount
+		}
 		e.InstanceStatus = redisinstance.InstanceStatusChanging
 		return nil
 	}
@@ -318,7 +320,9 @@ func (s *redisStore) modifyInstanceSpec(ctx context.Context, instanceId string, 
 		if opts.ShardCount > 0 {
 			e.ShardCount = opts.ShardCount
 		}
-		e.ReplicasPerShard = opts.ReadOnlyCount
+		if opts.ReadOnlyCount != nil {
+			e.ReplicasPerShard = *opts.ReadOnlyCount
+		}
 		e.InstanceStatus = redisinstance.InstanceStatusChanging
 		return nil
 	}
