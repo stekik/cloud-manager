@@ -51,8 +51,7 @@ func (r *reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 }
 
 func (r *reconciler) newAction() composed.Action {
-	return composed.ComposeActions(
-		"alicloudRedisInstance",
+	return composed.ComposeActionsNoName(
 		feature.LoadFeatureContextFromObj(&cloudresourcesv1beta1.AlicloudRedisInstance{}),
 		composed.LoadObj,
 
@@ -62,9 +61,22 @@ func (r *reconciler) newAction() composed.Action {
 		loadKcpRedisInstance,
 		loadAuthSecret,
 
-		composed.IfElse(composed.Not(composed.MarkedForDeletionPredicate),
-			composed.ComposeActions(
-				"alicloudRedisInstance-create",
+		// delete ================================================================================
+		composed.If(composed.MarkedForDeletionPredicate,
+			composed.ComposeActionsNoName(
+				removeAuthSecretFinalizer,
+				deleteAuthSecret,
+				waitAuthSecretDeleted,
+				deleteKcpRedisInstance,
+				waitKcpRedisInstanceDeleted,
+				actions.RemoveCommonFinalizer(),
+				composed.StopAndForgetAction,
+			),
+		),
+
+		// create/update =========================================================================
+		composed.If(composed.NotMarkedForDeletionPredicate,
+			composed.ComposeActionsNoName(
 				actions.AddCommonFinalizer(),
 				createKcpRedisInstance,
 				waitKcpStatusUpdate,
@@ -74,16 +86,6 @@ func (r *reconciler) newAction() composed.Action {
 				createAuthSecret,
 				loadAuthSecret,
 				modifyAuthSecret,
-			),
-			composed.ComposeActions(
-				"alicloudRedisInstance-delete",
-				removeAuthSecretFinalizer,
-				deleteAuthSecret,
-				waitAuthSecretDeleted,
-				deleteKcpRedisInstance,
-				waitKcpRedisInstanceDeleted,
-				actions.RemoveCommonFinalizer(),
-				composed.StopAndForgetAction,
 			),
 		),
 
