@@ -4,8 +4,11 @@ package v1beta1
 // The tier letter+number encodes the underlying AliCloud r-kvstore standard
 // instance class and read-only replica count:
 //
-//	S1-S5 → redis.master.*.default with ReadOnlyCount=0 (HA master+replica)
-//	P1-P5 → redis.master.*.default with ReadOnlyCount=1 (HA master+replica + read-only replica)
+//	S1-S5 → redis.master.*.cloud with ReadOnlyCount=0 (HA master+replica)
+//	P1-P5 → redis.master.*.cloud with ReadOnlyCount=1 (HA master+replica + read-only replica)
+//
+// Cloud-disk (*.cloud) classes are used because they support all engine versions
+// including 7.0; local-disk (*.default) classes only support up to 6.0.
 //
 // Both letter (S↔P) and number (1..5) are mutable via ModifyInstanceSpec; no
 // recreation is required to switch between S and P at the same capacity.
