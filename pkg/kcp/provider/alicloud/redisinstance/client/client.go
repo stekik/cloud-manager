@@ -264,22 +264,32 @@ func (c *alicloudRedisClient) DescribeInstance(ctx context.Context, instanceId s
 // DescribeInstanceByName searches for an instance by exact name. Returns
 // (nil, nil) when no matching instance is found.
 func (c *alicloudRedisClient) DescribeInstanceByName(ctx context.Context, name string) (*InstanceInfo, error) {
-	req := &rkvstore.DescribeInstancesRequest{
-		RegionId:  new(c.region),
-		SearchKey: new(name),
-	}
-	resp, err := c.c.DescribeInstances(req)
-	if err != nil {
-		return nil, fmt.Errorf("error describing alicloud r-kvstore instances by name %s: %w", name, err)
-	}
-	if resp == nil || resp.Body == nil || resp.Body.Instances == nil {
-		return nil, nil
-	}
-	for _, inst := range resp.Body.Instances.KVStoreInstance {
-		if tea.StringValue(inst.InstanceName) == name {
-			// DescribeInstances returns summary fields; do a full describe by ID.
-			return c.DescribeInstance(ctx, tea.StringValue(inst.InstanceId))
+	const pageSize = int32(50)
+	pageNum := int32(1)
+	for {
+		req := &rkvstore.DescribeInstancesRequest{
+			RegionId:   new(c.region),
+			SearchKey:  new(name),
+			PageSize:   tea.Int32(pageSize),
+			PageNumber: tea.Int32(pageNum),
 		}
+		resp, err := c.c.DescribeInstances(req)
+		if err != nil {
+			return nil, fmt.Errorf("error describing alicloud r-kvstore instances by name %s: %w", name, err)
+		}
+		if resp == nil || resp.Body == nil || resp.Body.Instances == nil {
+			return nil, nil
+		}
+		for _, inst := range resp.Body.Instances.KVStoreInstance {
+			if tea.StringValue(inst.InstanceName) == name {
+				return c.DescribeInstance(ctx, tea.StringValue(inst.InstanceId))
+			}
+		}
+		total := tea.Int32Value(resp.Body.TotalCount)
+		if pageNum*pageSize >= total {
+			break
+		}
+		pageNum++
 	}
 	return nil, nil
 }
