@@ -56,7 +56,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 		})
 
 		redisInstance := &cloudcontrolv1beta1.RedisInstance{}
-		instanceClass := "redis.master.small.default"
+		instanceClass := "tair.rdb.1g"
 		engineVersion := "7.0"
 
 		By("When RedisInstance is created", func() {
@@ -162,7 +162,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 					WithIpRange(kcpIpRangeName),
 					WithScope(name),
 					WithRedisInstanceAlicloud(),
-					WithKcpAlicloudRedisInstanceClass("redis.master.small.default"),
+					WithKcpAlicloudRedisInstanceClass("tair.rdb.1g"),
 					WithKcpAlicloudRedisEngineVersion("7.0"),
 				).Should(Succeed(), "failed creating RedisInstance")
 		})
@@ -267,7 +267,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 					WithIpRange(kcpIpRangeName),
 					WithScope(name),
 					WithRedisInstanceAlicloud(),
-					WithKcpAlicloudRedisInstanceClass("redis.master.small.default"),
+					WithKcpAlicloudRedisInstanceClass("tair.rdb.1g"),
 					WithKcpAlicloudRedisEngineVersion("7.0"),
 					WithKcpAlicloudRedisReadOnlyCount(0),
 				).Should(Succeed())
@@ -302,7 +302,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 					client.ObjectKeyFromObject(redisInstance), redisInstance); err != nil {
 					return err
 				}
-				redisInstance.Spec.Instance.Alicloud.InstanceClass = "redis.master.mid.default"
+				redisInstance.Spec.Instance.Alicloud.InstanceClass = "tair.rdb.2g"
 				redisInstance.Spec.Instance.Alicloud.ReadOnlyCount = 1
 				return infra.KCP().Client().Update(infra.Ctx(), redisInstance)
 			}).Should(Succeed())
@@ -315,7 +315,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 					NewObjActions(),
 					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
 					HavingState("Ready"),
-					HavingFieldValue("redis.master.mid.default", "status", "nodeType"),
+					HavingFieldValue("tair.rdb.2g", "status", "nodeType"),
 					HavingFieldValue(int32(1), "status", "replicaCount"),
 				)
 			}).Should(Succeed(), "expected RedisInstance to reach Ready with updated instanceClass and readOnlyCount")

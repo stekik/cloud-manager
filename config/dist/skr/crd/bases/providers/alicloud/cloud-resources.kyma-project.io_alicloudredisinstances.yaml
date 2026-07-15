@@ -76,22 +76,16 @@ spec:
                 type: object
               engineVersion:
                 default: "7.0"
-                description: |-
-                  EngineVersion is the Redis engine version.
-                  Only upgrades are supported (not downgrades) via ModifyInstanceMajorVersion.
+                description: EngineVersion is the Redis engine version. Immutable
+                  after creation.
                 enum:
                 - "5.0"
                 - "6.0"
                 - "7.0"
                 type: string
                 x-kubernetes-validations:
-                - message: engineVersion cannot be downgraded.
-                  rule: (self != "5.0" || oldSelf == "5.0")
-                - message: engineVersion cannot be downgraded.
-                  rule: (self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0")
-                - message: engineVersion cannot be downgraded.
-                  rule: (self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" ||
-                    oldSelf == "5.0")
+                - message: engineVersion is immutable.
+                  rule: (self == oldSelf)
               ipRange:
                 properties:
                   name:
@@ -99,6 +93,9 @@ spec:
                 required:
                 - name
                 type: object
+                x-kubernetes-validations:
+                - message: IpRange is immutable.
+                  rule: (self == oldSelf)
               parameters:
                 additionalProperties:
                   type: string
