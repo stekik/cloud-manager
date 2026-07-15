@@ -180,7 +180,7 @@ func (r *simKymaSkr) Reconcile(ctx context.Context, request reconcile.Request) (
 
 			if elapsed >= r.timeoutRemoveModuleToErrorState {
 				ms := skrKyma.GetModuleStatusMap()["cloud-manager"]
-				if ms.State != operatorshared.StateError {
+				if ms == nil || ms.State != operatorshared.StateError {
 					outcome.Processed("cloud-manager", operatorshared.StateError, "Timeout waiting for module to be deleted")
 
 					util.ExpiringSwitch().
@@ -260,7 +260,7 @@ func (r *simKymaSkr) Reconcile(ctx context.Context, request reconcile.Request) (
 			elapsed := r.clock.Since(cm.CreationTimestamp.Time)
 			if elapsed >= r.timeoutRemoveModuleToErrorState {
 				ms := skrKyma.GetModuleStatusMap()["cloud-manager"]
-				if ms.State != operatorshared.StateError {
+				if ms == nil || ms.State != operatorshared.StateError {
 					outcome.Processed("cloud-manager", operatorshared.StateError, "Timeout waiting for module to be deleted")
 
 					util.ExpiringSwitch().
@@ -327,7 +327,7 @@ func (r *simKymaSkr) Reconcile(ctx context.Context, request reconcile.Request) (
 			elapsed := r.clock.Since(cm.CreationTimestamp.Time)
 			if elapsed >= r.timeoutAddModuleToReadyState {
 				ms := skrKyma.GetModuleStatusMap()["cloud-manager"]
-				if ms.State != operatorshared.StateError {
+				if ms == nil || ms.State != operatorshared.StateError {
 					outcome.Processed("cloud-manager", operatorshared.StateError, "Timeout waiting for module to be ready")
 
 					util.ExpiringSwitch().
