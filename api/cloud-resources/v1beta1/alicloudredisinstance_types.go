@@ -28,6 +28,7 @@ import (
 // r-kvstore instance. See AlicloudRedisCluster for sharded clusters.
 type AlicloudRedisInstanceSpec struct {
 	// +optional
+	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="IpRange is immutable."
 	IpRange IpRangeRef `json:"ipRange"`
 
 	// RedisTier defines service and capacity tier.
@@ -37,14 +38,11 @@ type AlicloudRedisInstanceSpec struct {
 	// +kubebuilder:validation:Required
 	RedisTier AlicloudRedisTier `json:"redisTier"`
 
-	// EngineVersion is the Redis engine version.
-	// Only upgrades are supported (not downgrades) via ModifyInstanceMajorVersion.
+	// EngineVersion is the Redis engine version. Immutable after creation.
 	// +optional
 	// +kubebuilder:default="7.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
-	// +kubebuilder:validation:XValidation:rule=(self != "5.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" || oldSelf == "5.0"), message="engineVersion cannot be downgraded."
+	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
 	EngineVersion string `json:"engineVersion"`
 
 	// Parameters are passed to the AliCloud instance as runtime configuration.

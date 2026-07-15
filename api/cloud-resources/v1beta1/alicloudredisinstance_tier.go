@@ -12,6 +12,7 @@ package v1beta1
 //
 // Both letter (S↔P) and number (1..5) are mutable via ModifyInstanceSpec; no
 // recreation is required to switch between S and P at the same capacity.
+// EngineVersion is immutable after creation (no ModifyInstanceMajorVersion support).
 //
 // The tier→InstanceClass mapping lives in pkg/skr/alicloudredisinstance/util.go
 // and can be updated without a CRD version bump. Availability of a given class

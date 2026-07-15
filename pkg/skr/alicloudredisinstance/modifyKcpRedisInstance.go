@@ -47,7 +47,6 @@ func modifyKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 
 	state.KcpRedisInstance.Spec.Instance.Alicloud.InstanceClass = instanceClass
 	state.KcpRedisInstance.Spec.Instance.Alicloud.ReadOnlyCount = readOnlyCount
-	state.KcpRedisInstance.Spec.Instance.Alicloud.EngineVersion = alicloudRedisInstance.Spec.EngineVersion
 	state.KcpRedisInstance.Spec.Instance.Alicloud.Parameters = alicloudRedisInstance.Spec.Parameters
 
 	err = state.KcpCluster.K8sClient().Update(ctx, state.KcpRedisInstance)

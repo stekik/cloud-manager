@@ -14,16 +14,16 @@ func TestRedisTierToInstanceClassAndReadOnlyCount(t *testing.T) {
 		expectedReadOnlyCount int32
 		expectError           bool
 	}{
-		{cloudresourcesv1beta1.AlicloudRedisTierS1, "redis.master.small.default", 0, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierS2, "redis.master.mid.default", 0, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierS3, "redis.master.large.default", 0, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierS4, "redis.master.xlarge.default", 0, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierS5, "redis.master.2xlarge.default", 0, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierP1, "redis.master.small.default", 1, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierP2, "redis.master.mid.default", 1, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierP3, "redis.master.large.default", 1, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierP4, "redis.master.xlarge.default", 1, false},
-		{cloudresourcesv1beta1.AlicloudRedisTierP5, "redis.master.2xlarge.default", 1, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierS1, "tair.rdb.1g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierS2, "tair.rdb.2g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierS3, "tair.rdb.4g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierS4, "tair.rdb.8g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierS5, "tair.rdb.16g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierP1, "tair.rdb.1g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierP2, "tair.rdb.2g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierP3, "tair.rdb.4g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierP4, "tair.rdb.8g", 0, false},
+		{cloudresourcesv1beta1.AlicloudRedisTierP5, "tair.rdb.16g", 0, false},
 		{"unknown", "", 0, true},
 	}
 
@@ -63,7 +63,8 @@ func TestSAndPTiersShareInstanceClass(t *testing.T) {
 		pClass, pCount, err := redisTierToInstanceClassAndReadOnlyCount(pTiers[i])
 		assert.NoError(t, err)
 		assert.Equal(t, sClass, pClass, "S%d and P%d should have same instance class", i+1, i+1)
+		// tair.rdb does not accept readOnlyCount via the API; both S and P tiers use 0.
 		assert.Equal(t, int32(0), sCount, "S%d should have readOnlyCount=0", i+1)
-		assert.Equal(t, int32(1), pCount, "P%d should have readOnlyCount=1", i+1)
+		assert.Equal(t, int32(0), pCount, "P%d should have readOnlyCount=0 (tair.rdb API constraint)", i+1)
 	}
 }
