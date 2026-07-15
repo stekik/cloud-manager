@@ -163,8 +163,9 @@ type alicloudRedisClient struct {
 // CreateInstance provisions a new r-kvstore instance. The instance
 // architecture (standard vs cluster) is entirely determined by
 // opts.InstanceClass:
-//   - redis.master.*.default → standard HA
-//   - redis.shard.*.ce       → cloud-native cluster (requires ShardCount)
+//   - redis.master.*.cloud       → standard HA (cloud-disk, supports all engine versions)
+//   - redis.master.*.default     → standard HA (local-disk, supports 5.0 and 6.0 only)
+//   - redis.shard.*.ce           → cloud-native cluster (requires ShardCount)
 func (c *alicloudRedisClient) CreateInstance(ctx context.Context, opts CreateInstanceOptions) (string, error) {
 	req := &rkvstore.CreateInstanceRequest{
 		RegionId:      new(c.region),
