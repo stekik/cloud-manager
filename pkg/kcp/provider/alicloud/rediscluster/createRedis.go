@@ -2,10 +2,12 @@ package rediscluster
 
 import (
 	"context"
+	"crypto/sha256"
 	"fmt"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloud "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud"
 	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -34,14 +36,13 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
 	}
 
-	vSwitchId := ""
+	var vSwitchIds []string
 	for _, sn := range state.IpRange().Status.Subnets {
 		if sn.Id != "" {
-			vSwitchId = sn.Id
-			break
+			vSwitchIds = append(vSwitchIds, sn.Id)
 		}
 	}
-	if vSwitchId == "" {
+	if len(vSwitchIds) == 0 {
 		return composed.LogErrorAndReturn(
 			fmt.Errorf("no vSwitch found in IpRange subnets"),
 			"AliCloud rediscluster IpRange has no vSwitch",
@@ -53,7 +54,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	// before status write does not lose the password on the next retry.
 	password := kcp.Status.AuthString
 	if password == "" {
-		password = util.RandomString(32)
+		password = alicloud.GeneratePassword()
 		kcp.Status.AuthString = password
 		if err := state.UpdateObjStatus(ctx); err != nil {
 			return composed.LogErrorAndReturn(err,
@@ -62,20 +63,45 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		}
 	}
 
-	opts := alicloudclient.CreateInstanceOptions{
-		InstanceName:  kcp.Name,
-		InstanceClass: kcp.Spec.Instance.Alicloud.InstanceClass,
-		EngineVersion: kcp.Spec.Instance.Alicloud.EngineVersion,
-		VpcId:         state.IpRange().Status.VpcId,
-		VSwitchId:     vSwitchId,
-		Password:      password,
-		ShardCount:    kcp.Spec.Instance.Alicloud.ShardCount,
-		ReadOnlyCount: kcp.Spec.Instance.Alicloud.ReplicasPerShard,
-		Token:         string(kcp.UID),
+	// Try each vSwitch in turn. Some instance classes are only available in
+	// specific zones; AliCloud returns InvalidvSwitchId when the zone does not
+	// support the requested class.
+	var instanceId string
+	var lastErr error
+	allZonesFailed := true
+	for _, vSwitchId := range vSwitchIds {
+		// "v2" suffix rotates tokens away from v1 tokens that included ReadOnlyCount.
+		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId + "v2"
+		tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(tokenInput)))[:32]
+
+		opts := alicloudclient.CreateInstanceOptions{
+			InstanceName:  kcp.Name,
+			InstanceClass: kcp.Spec.Instance.Alicloud.InstanceClass,
+			EngineVersion: kcp.Spec.Instance.Alicloud.EngineVersion,
+			VpcId:         state.IpRange().Status.VpcId,
+			VSwitchId:     vSwitchId,
+			Password:      password,
+			ShardCount:    kcp.Spec.Instance.Alicloud.ShardCount,
+			Token:         tokenHash,
+		}
+		var err error
+		instanceId, err = state.client.CreateInstance(ctx, opts)
+		if err == nil {
+			lastErr = nil
+			allZonesFailed = false
+			break
+		}
+		lastErr = err
+		if alicloudclient.IsVSwitchZoneErr(err) {
+			logger.Info("AliCloud r-kvstore cluster: vSwitch zone not supported, trying next", "vSwitchId", vSwitchId, "instanceClass", kcp.Spec.Instance.Alicloud.InstanceClass)
+			continue
+		}
+		allZonesFailed = false
+		break
 	}
 
-	instanceId, err := state.client.CreateInstance(ctx, opts)
-	if err != nil {
+	if lastErr != nil {
+		err := lastErr
 		logger.Error(err, "Error creating AliCloud r-kvstore cluster instance")
 		meta.SetStatusCondition(kcp.Conditions(), metav1.Condition{
 			Type:    cloudcontrolv1beta1.ConditionTypeError,
@@ -88,7 +114,14 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 				"Error updating RedisCluster status after failed CreateInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 		}
+		if allZonesFailed {
+			return composed.StopWithRequeueDelay(util.Timing.T300000ms()), ctx
+		}
 		if alicloudclient.IsPermanentError(err) {
+			if alicloudclient.IsPasswordErr(err) {
+				kcp.Status.AuthString = ""
+				_ = state.UpdateObjStatus(ctx)
+			}
 			return composed.StopAndForget, ctx
 		}
 		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx

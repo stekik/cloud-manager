@@ -2,53 +2,17 @@ package redisinstance
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/sha256"
 	"fmt"
-	"math/big"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloud "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud"
 	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-// alicloudPassword generates a 32-char password satisfying AliCloud r-kvstore
-// requirements: uppercase, lowercase, and digit characters required.
-func alicloudPassword() string {
-	const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-	const lower = "abcdefghijklmnopqrstuvwxyz"
-	const digits = "0123456789"
-	const all = upper + lower + digits
-
-	randChar := func(charset string) byte {
-		n, err := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
-		if err != nil {
-			panic(fmt.Sprintf("crypto/rand failure: %v", err))
-		}
-		return charset[n.Int64()]
-	}
-
-	b := make([]byte, 32)
-	b[0] = randChar(upper)
-	b[1] = randChar(lower)
-	b[2] = randChar(digits)
-	for i := 3; i < 32; i++ {
-		b[i] = randChar(all)
-	}
-	// Fisher-Yates shuffle using crypto/rand.
-	for i := len(b) - 1; i > 0; i-- {
-		jBig, err := rand.Int(rand.Reader, big.NewInt(int64(i+1)))
-		if err != nil {
-			panic(fmt.Sprintf("crypto/rand failure: %v", err))
-		}
-		j := int(jBig.Int64())
-		b[i], b[j] = b[j], b[i]
-	}
-	return string(b)
-}
 
 // createRedis provisions a new r-kvstore instance if one does not yet exist.
 // The password is generated here and stored immediately on Status.AuthString
@@ -95,7 +59,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	// idempotency Token returns the same instance; we must not regenerate).
 	password := kcp.Status.AuthString
 	if password == "" {
-		password = alicloudPassword()
+		password = alicloud.GeneratePassword()
 		kcp.Status.AuthString = password
 		if err := state.UpdateObjStatus(ctx); err != nil {
 			return composed.LogErrorAndReturn(err,
@@ -164,6 +128,11 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			return composed.StopWithRequeueDelay(util.Timing.T300000ms()), ctx
 		}
 		if alicloudclient.IsPermanentError(err) {
+			if alicloudclient.IsPasswordErr(err) {
+				// Clear authString so the next reconcile generates a fresh password.
+				kcp.Status.AuthString = ""
+				_ = state.UpdateObjStatus(ctx)
+			}
 			return composed.StopAndForget, ctx
 		}
 		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
