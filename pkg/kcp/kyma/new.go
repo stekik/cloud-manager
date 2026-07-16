@@ -82,7 +82,10 @@ func shouldEnable(_ context.Context, st composed.State) bool {
 	if state.scope == nil {
 		return false
 	}
-	if state.moduleState != util.KymaModuleStateNotPresent {
+	// Only activate when the module is in spec (being enabled) or already running.
+	// A module present only in status (e.g. Ready with moduleInSpec=false after cleanup)
+	// must not re-activate the SKR runner — that causes an infinite readiness loop.
+	if state.moduleInSpec || state.skrActive {
 		return true
 	}
 	return false
