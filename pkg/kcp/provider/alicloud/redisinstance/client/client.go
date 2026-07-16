@@ -142,6 +142,17 @@ func IsVSwitchZoneErr(err error) bool {
 	return false
 }
 
+// IsPasswordErr returns true when AliCloud rejects the CreateInstance password
+// as malformed (InvalidPassword.Malformed). Callers should clear the stored
+// authString so the next reconcile generates a fresh, compliant password.
+func IsPasswordErr(err error) bool {
+	var sdkErr *tea.SDKError
+	if errors.As(err, &sdkErr) && sdkErr.Code != nil {
+		return tea.StringValue(sdkErr.Code) == "InvalidPassword.Malformed"
+	}
+	return false
+}
+
 // IsNotFoundErr returns true when AliCloud reports the instance ID does not
 // exist (404 InvalidInstanceId.NotFound). Callers should treat this as
 // "instance already gone" rather than a transient error.
