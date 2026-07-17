@@ -6,6 +6,7 @@ import (
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -23,6 +24,10 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 	if instanceId != "" {
 		info, err := state.client.DescribeInstance(ctx, instanceId)
 		if err != nil {
+			if alicloudclient.IsNotFoundErr(err) {
+				// Instance already gone — treat as not found so deletion can proceed.
+				return nil, ctx
+			}
 			logger.Error(err, "Error describing AliCloud r-kvstore cluster instance")
 			meta.SetStatusCondition(state.ObjAsRedisCluster().Conditions(), metav1.Condition{
 				Type:    cloudcontrolv1beta1.ConditionTypeError,

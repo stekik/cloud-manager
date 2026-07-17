@@ -16,6 +16,9 @@ func waitRedisDeleted(ctx context.Context, st composed.State) (error, context.Co
 	}
 	info, err := state.client.DescribeInstance(ctx, instanceId)
 	if err != nil {
+		if alicloudclient.IsNotFoundErr(err) {
+			return nil, ctx
+		}
 		return composed.LogErrorAndReturn(err,
 			"Error describing AliCloud r-kvstore cluster instance during delete wait",
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
