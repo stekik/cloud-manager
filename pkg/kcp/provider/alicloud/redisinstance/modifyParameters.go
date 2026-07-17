@@ -3,7 +3,7 @@ package redisinstance
 import (
 	"context"
 	"encoding/json"
-	"reflect"
+	"fmt"
 
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -23,21 +23,33 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 	}
 	desired := kcp.Spec.Instance.Alicloud.Parameters
 
-	// Parse current config from instance so we can compare.
+	// Nothing to apply if desired is empty.
+	if len(desired) == 0 {
+		return nil, ctx
+	}
+
+	// Parse current config from instance. AliCloud stores the full config object
+	// including defaults, so we unmarshal into map[string]interface{} and convert
+	// to strings to handle both string and numeric values.
 	current := map[string]string{}
 	if state.instance.Config != "" {
-		if err := json.Unmarshal([]byte(state.instance.Config), &current); err != nil {
-			// Unparseable current config — apply desired unconditionally.
-			current = nil
+		raw := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(state.instance.Config), &raw); err == nil {
+			for k, v := range raw {
+				current[k] = fmt.Sprintf("%v", v)
+			}
 		}
 	}
 
-	// No change needed when desired equals current (including both empty).
-	if current != nil && reflect.DeepEqual(current, desired) {
-		return nil, ctx
+	// No change needed when every desired key already matches the current value.
+	allMatch := true
+	for k, v := range desired {
+		if current[k] != v {
+			allMatch = false
+			break
+		}
 	}
-	// Nothing to clear if both are empty.
-	if len(desired) == 0 && len(current) == 0 {
+	if allMatch {
 		return nil, ctx
 	}
 
