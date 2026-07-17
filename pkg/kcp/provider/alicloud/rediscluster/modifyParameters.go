@@ -3,7 +3,7 @@ package rediscluster
 import (
 	"context"
 	"encoding/json"
-	"reflect"
+	"fmt"
 
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -26,14 +26,28 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 		return nil, ctx
 	}
 
+	// Parse current config from instance. AliCloud stores the full config object
+	// including defaults, so we unmarshal into map[string]interface{} and convert
+	// to strings to handle both string and numeric values.
 	current := map[string]string{}
 	if state.instance.Config != "" {
-		if err := json.Unmarshal([]byte(state.instance.Config), &current); err != nil {
-			current = nil
+		raw := map[string]interface{}{}
+		if err := json.Unmarshal([]byte(state.instance.Config), &raw); err == nil {
+			for k, v := range raw {
+				current[k] = fmt.Sprintf("%v", v)
+			}
 		}
 	}
 
-	if current != nil && reflect.DeepEqual(current, desired) {
+	// No change needed when every desired key already matches the current value.
+	allMatch := true
+	for k, v := range desired {
+		if current[k] != v {
+			allMatch = false
+			break
+		}
+	}
+	if allMatch {
 		return nil, ctx
 	}
 
