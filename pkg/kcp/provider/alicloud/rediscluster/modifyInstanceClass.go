@@ -25,7 +25,11 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 	desiredReplicas := kcp.Spec.Instance.Alicloud.ReplicasPerShard
 
 	classDrift := desiredClass != "" && desiredClass != state.instance.InstanceClass
-	replicasDrift := desiredReplicas != state.instance.ReadOnlyCount
+	// Proxy-based cluster classes (redis.logic.sharding.*) encode replicas in
+	// the class name; ReadOnlyCount is always 0 on those instances and cannot
+	// be changed independently. Only check replicasDrift for standard classes.
+	replicasDrift := !alicloudclient.IsProxyClusterClass(desiredClass) &&
+		desiredReplicas != state.instance.ReadOnlyCount
 	if !classDrift && !replicasDrift {
 		return nil, ctx
 	}

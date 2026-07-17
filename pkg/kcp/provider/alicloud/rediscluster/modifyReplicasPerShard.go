@@ -30,6 +30,11 @@ func modifyReplicasPerShard(ctx context.Context, st composed.State) (error, cont
 		return nil, ctx
 	}
 	desired := kcp.Spec.Instance.Alicloud.ReplicasPerShard
+	// Proxy-based cluster classes encode replica topology in the class name;
+	// ReadOnlyCount is always 0 and cannot be tuned independently.
+	if alicloudclient.IsProxyClusterClass(state.instance.InstanceClass) {
+		return nil, ctx
+	}
 	if desired == state.instance.ReadOnlyCount {
 		return nil, ctx
 	}
