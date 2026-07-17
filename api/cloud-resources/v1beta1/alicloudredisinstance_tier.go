@@ -1,22 +1,22 @@
 package v1beta1
 
 // AlicloudRedisTier defines the Kyma service tier for an AlicloudRedisInstance.
-// The tier letter+number encodes the underlying AliCloud r-kvstore standard
-// instance class and read-only replica count:
+// The tier letter+number encodes the underlying AliCloud r-kvstore instance
+// class and read-only replica count:
 //
-//	S1-S5 → redis.master.*.cloud with ReadOnlyCount=0 (HA master+replica)
-//	P1-P5 → redis.master.*.cloud with ReadOnlyCount=1 (HA master+replica + read-only replica)
+//	S1-S5 → redis.master.*.default, ReadOnlyCount=0
+//	        standard HA (master+replica), 80k QPS, engine 5.0
+//	P1-P5 → redis.amber.master.*.multithread, ReadOnlyCount=1
+//	        enterprise HA (master+replica+read-only replica), 240k QPS, engine 5.0
 //
-// Cloud-disk (*.cloud) classes are used because they support all engine versions
-// including 7.0; local-disk (*.default) classes only support up to 6.0.
+// Both class families are available in all AliCloud international regions.
+// Engine version is constrained to "5.0" — local-disk and amber-multithread
+// classes do not support 6.0 or 7.0 in international regions.
 //
 // Both letter (S↔P) and number (1..5) are mutable via ModifyInstanceSpec; no
-// recreation is required to switch between S and P at the same capacity.
-// EngineVersion is immutable after creation (no ModifyInstanceMajorVersion support).
+// recreation is required. EngineVersion is immutable after creation.
 //
-// The tier→InstanceClass mapping lives in pkg/skr/alicloudredisinstance/util.go
-// and can be updated without a CRD version bump. Availability of a given class
-// in a specific region is validated at runtime via DescribeAvailableResource.
+// The tier→InstanceClass mapping lives in pkg/skr/alicloudredisinstance/util.go.
 //
 // +kubebuilder:validation:Enum=S1;S2;S3;S4;S5;P1;P2;P3;P4;P5
 type AlicloudRedisTier string
