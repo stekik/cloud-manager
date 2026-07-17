@@ -39,6 +39,7 @@ type AlicloudRedisClusterSpec struct {
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=32
+	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="shardCount is immutable."
 	ShardCount int32 `json:"shardCount"`
 
 	// ReplicasPerShard: 0 = no replica per shard, 1 = HA per shard.

@@ -129,6 +129,9 @@ spec:
                 maximum: 32
                 minimum: 1
                 type: integer
+                x-kubernetes-validations:
+                - message: shardCount is immutable.
+                  rule: (self == oldSelf)
             required:
             - redisTier
             - shardCount
