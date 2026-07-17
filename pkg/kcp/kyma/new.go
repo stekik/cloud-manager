@@ -69,6 +69,11 @@ func shouldDisable(_ context.Context, st composed.State) bool {
 	if state.scope == nil {
 		return true
 	}
+	// Module in spec overrides a missing/stale status — do not disable if the
+	// operator has explicitly listed cloud-manager in spec.
+	if state.moduleInSpec {
+		return false
+	}
 	if state.moduleState == util.KymaModuleStateNotPresent {
 		return true
 	}
