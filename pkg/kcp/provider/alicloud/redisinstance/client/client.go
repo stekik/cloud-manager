@@ -174,6 +174,20 @@ func IsProxyClusterClass(instanceClass string) bool {
 		strings.HasPrefix(instanceClass, "redis.amber.logic.sharding.")
 }
 
+// IsReadOnlyCountUnsupported returns true for instance classes where the
+// AliCloud API silently ignores ReadOnlyCount — the field is absent from
+// DescribeInstanceAttribute and ModifyInstanceSpec with ReadOnlyCount has no
+// effect. Callers must skip ReadOnlyCount drift checks for these classes to
+// avoid an infinite modify loop.
+//
+// Affected families (confirmed via live API testing):
+//   - tair.rdb.*:                         DRAM-based HA, ReadOnlyCount absent
+//   - redis.amber.master.*.multithread:   enterprise HA, ReadOnlyCount absent
+func IsReadOnlyCountUnsupported(instanceClass string) bool {
+	return strings.HasPrefix(instanceClass, "tair.rdb.") ||
+		strings.HasPrefix(instanceClass, "redis.amber.master.")
+}
+
 // ClientProvider is the standard cloud-manager credential/region-scoped
 // constructor signature used across all AliCloud client packages.
 type ClientProvider func(ctx context.Context, region, accessKeyId, accessKeySecret string) (Client, error)

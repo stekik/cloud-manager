@@ -27,7 +27,12 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 	desiredReadOnly := kcp.Spec.Instance.Alicloud.ReadOnlyCount
 
 	classDrift := desiredClass != "" && desiredClass != state.instance.InstanceClass
-	readOnlyDrift := desiredReadOnly != state.instance.ReadOnlyCount
+	// Some classes (tair.rdb.*, redis.amber.master.*.multithread) silently ignore
+	// ReadOnlyCount — the field is absent from DescribeInstanceAttribute and
+	// ModifyInstanceSpec has no effect. Skip drift detection for those classes to
+	// avoid an infinite modify loop.
+	readOnlyDrift := !alicloudclient.IsReadOnlyCountUnsupported(state.instance.InstanceClass) &&
+		desiredReadOnly != state.instance.ReadOnlyCount
 	if !classDrift && !readOnlyDrift {
 		return nil, ctx
 	}
