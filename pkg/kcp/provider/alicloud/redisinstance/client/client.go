@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	openapi "github.com/alibabacloud-go/darabonba-openapi/v2/client"
 	rkvstore "github.com/alibabacloud-go/r-kvstore-20150101/v7/client"
@@ -162,6 +163,15 @@ func IsNotFoundErr(err error) bool {
 		return tea.StringValue(sdkErr.Code) == "InvalidInstanceId.NotFound"
 	}
 	return false
+}
+
+// IsProxyClusterClass returns true for proxy-based sharded cluster classes
+// (redis.logic.sharding.* and redis.amber.logic.sharding.*). These classes
+// encode replica count in the class name; ReadOnlyCount is always 0 and
+// cannot be tuned independently via ModifyInstanceSpec.
+func IsProxyClusterClass(instanceClass string) bool {
+	return strings.HasPrefix(instanceClass, "redis.logic.sharding.") ||
+		strings.HasPrefix(instanceClass, "redis.amber.logic.sharding.")
 }
 
 // ClientProvider is the standard cloud-manager credential/region-scoped
