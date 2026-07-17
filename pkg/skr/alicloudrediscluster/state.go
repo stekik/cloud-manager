@@ -88,7 +88,7 @@ func (s *State) GetAuthSecretData() map[string][]byte {
 func (s *State) ShouldModifyKcp() bool {
 	alicloudRedisCluster := s.ObjAsAlicloudRedisCluster()
 
-	instanceClass, err := redisTierToInstanceClass(alicloudRedisCluster.Spec.RedisTier)
+	instanceClass, err := redisTierToInstanceClass(alicloudRedisCluster.Spec.RedisTier, alicloudRedisCluster.Spec.ShardCount)
 	if err != nil {
 		return true
 	}

@@ -2,6 +2,7 @@ package alicloudrediscluster
 
 import (
 	"errors"
+	"fmt"
 	"maps"
 	"strings"
 
@@ -77,18 +78,26 @@ func parseAuthSecretExtraData(extraDataTemplates map[string]string, authSecretBa
 	return util.ParseTemplatesMapToBytesMap(extraDataTemplates, baseDataStringMap)
 }
 
-var alicloudRedisClusterTierInstanceClassMap = map[cloudresourcesv1beta1.AlicloudRedisClusterTier]string{
-	cloudresourcesv1beta1.AlicloudRedisClusterTierC3: "redis.shard.large.ce",
-	cloudresourcesv1beta1.AlicloudRedisClusterTierC4: "redis.shard.xlarge.ce",
-	cloudresourcesv1beta1.AlicloudRedisClusterTierC5: "redis.shard.2xlarge.ce",
-	cloudresourcesv1beta1.AlicloudRedisClusterTierC6: "redis.shard.4xlarge.ce",
-	cloudresourcesv1beta1.AlicloudRedisClusterTierC7: "redis.shard.8xlarge.ce",
+// alicloudRedisClusterTierMemoryGbMap maps each tier to its per-shard memory in GB.
+// Tokyo (ap-northeast-1) only offers proxy-based sharding (redis.logic.sharding.*);
+// the cloud-native *.ce classes are not available there. The instance class is
+// constructed dynamically in redisTierToInstanceClass because the proxy count
+// is encoded in the class name alongside the shard count.
+var alicloudRedisClusterTierMemoryGbMap = map[cloudresourcesv1beta1.AlicloudRedisClusterTier]int32{
+	cloudresourcesv1beta1.AlicloudRedisClusterTierC3: 4,
+	cloudresourcesv1beta1.AlicloudRedisClusterTierC4: 8,
+	cloudresourcesv1beta1.AlicloudRedisClusterTierC5: 16,
+	cloudresourcesv1beta1.AlicloudRedisClusterTierC6: 32,
 }
 
-func redisTierToInstanceClass(tier cloudresourcesv1beta1.AlicloudRedisClusterTier) (string, error) {
-	instanceClass, exists := alicloudRedisClusterTierInstanceClassMap[tier]
+func redisTierToInstanceClass(tier cloudresourcesv1beta1.AlicloudRedisClusterTier, shardCount int32) (string, error) {
+	memGb, exists := alicloudRedisClusterTierMemoryGbMap[tier]
 	if !exists {
 		return "", errors.New("unknown redis cluster tier")
 	}
-	return instanceClass, nil
+	proxyCount := shardCount
+	if proxyCount < 4 {
+		proxyCount = 4
+	}
+	return fmt.Sprintf("redis.logic.sharding.%dg.%ddb.0rodb.%dproxy.default", memGb, shardCount, proxyCount), nil
 }
