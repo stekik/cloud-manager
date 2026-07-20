@@ -31,5 +31,5 @@ func updateId(ctx context.Context, st composed.State) (error, context.Context) {
 	}
 	logger.Info("SKR AlicloudRedisInstance updated with ID status")
 
-	return composed.StopWithRequeueDelay(util.Timing.T100ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T100ms()), ctx
 }
