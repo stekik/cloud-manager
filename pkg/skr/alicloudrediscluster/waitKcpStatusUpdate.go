@@ -28,5 +28,5 @@ func waitKcpStatusUpdate(ctx context.Context, st composed.State) (error, context
 		return nil, ctx
 	}
 
-	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 }

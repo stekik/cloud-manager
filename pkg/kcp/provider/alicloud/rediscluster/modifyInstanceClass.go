@@ -49,5 +49,5 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 	}
 
 	state.instance = nil
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

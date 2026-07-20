@@ -40,5 +40,5 @@ func waitKcpRedisClusterDeleted(ctx context.Context, st composed.State) (error, 
 	}
 
 	logger.Info("Waiting for Kcp RedisCluster to be deleted")
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

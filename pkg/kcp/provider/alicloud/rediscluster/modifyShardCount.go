@@ -41,5 +41,5 @@ func modifyShardCount(ctx context.Context, st composed.State) (error, context.Co
 	}
 
 	state.instance = nil
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

@@ -26,5 +26,5 @@ func waitRedisDeleted(ctx context.Context, st composed.State) (error, context.Co
 	if info == nil || info.InstanceStatus == alicloudclient.InstanceStatusReleased {
 		return nil, ctx
 	}
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }
