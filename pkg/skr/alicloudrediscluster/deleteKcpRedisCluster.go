@@ -23,7 +23,7 @@ func deleteKcpRedisCluster(ctx context.Context, st composed.State) (error, conte
 
 	redisCluster := state.ObjAsAlicloudRedisCluster()
 
-	err, _ := composed.UpdateStatus(redisCluster).
+	err, ctx := composed.UpdateStatus(redisCluster).
 		SetCondition(metav1.Condition{
 			Type:    cloudresourcesv1beta1.ConditionTypeDeleting,
 			Status:  metav1.ConditionTrue,

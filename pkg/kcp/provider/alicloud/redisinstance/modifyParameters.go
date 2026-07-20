@@ -25,16 +25,23 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 	}
 	desired := kcp.Spec.Instance.Alicloud.Parameters
 
-	// Parse current config from instance. AliCloud stores the full config object
-	// including defaults, so we unmarshal into map[string]interface{} and convert
-	// to strings to handle both string and numeric values.
-	current := map[string]string{}
+	// Parse current config from instance. AliCloud returns the full config object
+	// including system defaults. To avoid a perpetual modify loop when desired is
+	// empty (or a subset of system defaults), project current down to only the keys
+	// that appear in desired before comparing.
+	currentFull := map[string]string{}
 	if state.instance.Config != "" {
 		raw := map[string]interface{}{}
 		if err := json.Unmarshal([]byte(state.instance.Config), &raw); err == nil {
 			for k, v := range raw {
-				current[k] = fmt.Sprintf("%v", v)
+				currentFull[k] = fmt.Sprintf("%v", v)
 			}
+		}
+	}
+	current := map[string]string{}
+	for k := range desired {
+		if v, ok := currentFull[k]; ok {
+			current[k] = v
 		}
 	}
 

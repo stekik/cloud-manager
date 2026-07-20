@@ -32,7 +32,7 @@ type RedisInstanceAlicloud struct {
 
 	// EngineVersion is set at creation and is immutable.
 	// +optional
-	// +kubebuilder:default="7.0"
+	// +kubebuilder:default="5.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
 	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
 	EngineVersion string `json:"engineVersion"`

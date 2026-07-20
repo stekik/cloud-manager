@@ -19,8 +19,8 @@ func loadKcpRedisCluster(ctx context.Context, st composed.State) (error, context
 			return nil, ctx
 		}
 		return composed.LogErrorAndReturn(
-			errors.New("missing SKR AlicloudRedisCluster state.id"),
-			"Logical error in loadKcpRedisCluster",
+			errors.New("SKR AlicloudRedisCluster has no status.id"),
+			"SKR AlicloudRedisCluster has no status.id - requeuing",
 			composed.StopWithRequeue,
 			ctx,
 		)

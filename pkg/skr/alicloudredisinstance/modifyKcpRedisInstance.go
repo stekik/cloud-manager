@@ -17,7 +17,7 @@ func modifyKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 
 	if state.KcpRedisInstance == nil {
 		logger.Error(fmt.Errorf("kcpRedisInstance not found"), "KcpRedisInstance not found")
-		return composed.StopWithRequeue, nil
+		return composed.StopWithRequeue, ctx
 	}
 
 	shouldModifyKcp := state.ShouldModifyKcp()

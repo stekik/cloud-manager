@@ -29,9 +29,9 @@ func deleteRedis(ctx context.Context, st composed.State) (error, context.Context
 
 	if err := state.client.DeleteInstance(ctx, state.instance.InstanceId); err != nil {
 		logger.Error(err, "Error deleting AliCloud r-kvstore instance")
-		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	}
 	// Force re-load next reconcile so waitRedisDeleted observes the change.
 	state.instance = nil
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

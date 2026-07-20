@@ -17,7 +17,7 @@ func modifyKcpRedisCluster(ctx context.Context, st composed.State) (error, conte
 
 	if state.KcpRedisCluster == nil {
 		logger.Error(fmt.Errorf("kcpRedisCluster not found"), "KcpRedisCluster not found")
-		return composed.StopWithRequeue, nil
+		return composed.StopWithRequeue, ctx
 	}
 
 	shouldModifyKcp := state.ShouldModifyKcp()
