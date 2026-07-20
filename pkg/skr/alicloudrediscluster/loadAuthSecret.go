@@ -7,6 +7,7 @@ import (
 
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	"github.com/kyma-project/cloud-manager/pkg/util"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -45,8 +46,8 @@ func loadAuthSecret(ctx context.Context, st composed.State) (error, context.Cont
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage(errMsg).
-			SuccessLogMsg("Updated and forgot SKR AlicloudRedisCluster status with Error condition").
-			SuccessError(composed.StopAndForget).
+			SuccessLogMsg("Updated SKR AlicloudRedisCluster status with Error condition, requeuing").
+			SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).
 			Run(ctx, state)
 	}
 

@@ -34,8 +34,8 @@ func waitKcpRedisClusterDeleted(ctx context.Context, st composed.State) (error, 
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage("Error: updating AlicloudRedisCluster status with not ready condition due to KCP error").
-			SuccessLogMsg("Updated and forgot SKR AlicloudRedisCluster status with Error condition").
-			SuccessError(composed.StopAndForget).
+			SuccessLogMsg("Updated SKR AlicloudRedisCluster status with Error condition, requeuing").
+			SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).
 			Run(ctx, state)
 	}
 

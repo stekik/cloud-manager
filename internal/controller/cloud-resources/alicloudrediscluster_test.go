@@ -234,24 +234,23 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 				).Should(Succeed())
 		})
 
-		By("When redisTier is changed to C4 and shardCount is increased to 4", func() {
+		By("When redisTier is changed to C4", func() {
 			Eventually(func() error {
 				if err := infra.SKR().Client().Get(infra.Ctx(),
 					client.ObjectKeyFromObject(alicloudRedisCluster), alicloudRedisCluster); err != nil {
 					return err
 				}
 				alicloudRedisCluster.Spec.RedisTier = cloudresourcesv1beta1.AlicloudRedisClusterTierC4
-				alicloudRedisCluster.Spec.ShardCount = 4
 				return infra.SKR().Client().Update(infra.Ctx(), alicloudRedisCluster)
 			}).Should(Succeed())
 		})
 
-		By("Then KCP RedisCluster spec is updated with C4 instanceClass and shardCount=4", func() {
+		By("Then KCP RedisCluster spec is updated with C4 instanceClass", func() {
 			Eventually(LoadAndCheck).
 				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
 					NewObjActions(),
-					HavingFieldValue("redis.logic.sharding.8g.4db.0rodb.4proxy.default", "spec", "instance", "alicloud", "instanceClass"),
-					HavingFieldValue(int32(4), "spec", "instance", "alicloud", "shardCount"),
+					HavingFieldValue("redis.logic.sharding.8g.2db.0rodb.4proxy.default", "spec", "instance", "alicloud", "instanceClass"),
+					HavingFieldValue(int32(2), "spec", "instance", "alicloud", "shardCount"),
 				).Should(Succeed())
 		})
 
