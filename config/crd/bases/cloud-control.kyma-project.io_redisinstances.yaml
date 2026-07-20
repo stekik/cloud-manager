@@ -64,7 +64,7 @@ spec:
                       mutable via ModifyInstanceSpec, so no CEL immutability rules are attached.
                     properties:
                       engineVersion:
-                        default: "7.0"
+                        default: "5.0"
                         description: EngineVersion is set at creation and is immutable.
                         enum:
                         - "5.0"

@@ -25,7 +25,7 @@ import (
 
 // Client extends the standard-instance Client with cluster-only sharding
 // operations. Both AddShardingNode and DeleteShardingNode accept the target
-// ShardCount (absolute, not delta) — the SDK computes the required
+// ShardCount (absolute, not delta) - the SDK computes the required
 // add/remove count internally.
 type Client interface {
 	instanceclient.Client

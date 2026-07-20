@@ -28,7 +28,7 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 		info, err := state.client.DescribeInstance(ctx, instanceId)
 		if err != nil {
 			if alicloudclient.IsNotFoundErr(err) {
-				// Instance no longer exists on AliCloud — clear the stale ID so the
+				// Instance no longer exists on AliCloud - clear the stale ID so the
 				// create path can re-provision (or delete path can skip cleanly).
 				logger.Info("AliCloud r-kvstore instance not found, clearing stale ID", "instanceId", instanceId)
 				state.ObjAsRedisInstance().Status.Id = ""
@@ -57,7 +57,7 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 		return nil, ctx
 	}
 
-	// No Status.Id yet — search by name to recover a previously created instance
+	// No Status.Id yet - search by name to recover a previously created instance
 	// whose ID was not persisted (crash between CreateInstance and status write).
 	info, err := state.client.DescribeInstanceByName(ctx, state.ObjAsRedisInstance().Name)
 	if err != nil {

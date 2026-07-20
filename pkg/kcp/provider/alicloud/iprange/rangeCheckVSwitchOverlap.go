@@ -53,7 +53,7 @@ func rangeCheckVSwitchOverlap(ctx context.Context, st composed.State) (error, co
 					"vSwitchCidr", vsw.CidrBlock,
 				).Info("Range overlaps with existing vSwitch")
 
-				// Skip patching if the Error/CidrOverlap condition is already set —
+				// Skip patching if the Error/CidrOverlap condition is already set -
 				// patching status unconditionally triggers a watch event on every
 				// reconcile, creating a hot loop.
 				existing := meta.FindStatusCondition(state.ObjAsIpRange().Status.Conditions, cloudcontrolv1beta1.ConditionTypeError)

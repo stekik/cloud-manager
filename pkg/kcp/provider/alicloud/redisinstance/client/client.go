@@ -118,7 +118,7 @@ type Client interface {
 }
 
 // IsPermanentError returns true for AliCloud SDK errors that will never
-// succeed on retry — specifically 4xx responses other than 429 (rate limit).
+// succeed on retry - specifically 4xx responses other than 429 (rate limit).
 // Callers should use StopAndForget for permanent errors instead of requeueing.
 func IsPermanentError(err error) bool {
 	var sdkErr *tea.SDKError
@@ -175,7 +175,7 @@ func IsProxyClusterClass(instanceClass string) bool {
 }
 
 // IsReadOnlyCountUnsupported returns true for instance classes where the
-// AliCloud API silently ignores ReadOnlyCount — the field is absent from
+// AliCloud API silently ignores ReadOnlyCount - the field is absent from
 // DescribeInstanceAttribute and ModifyInstanceSpec with ReadOnlyCount has no
 // effect. Callers must skip ReadOnlyCount drift checks for these classes to
 // avoid an infinite modify loop.

@@ -11,7 +11,7 @@ import (
 
 // waitSkrStatusReady waits until the SKR object has either a Ready or Error
 // condition before continuing. Checking for conditions is more reliable than
-// checking the state string — it allows both happy-path (Ready) and error-path
+// checking the state string - it allows both happy-path (Ready) and error-path
 // (Error) to advance the pipeline immediately.
 func waitSkrStatusReady(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)

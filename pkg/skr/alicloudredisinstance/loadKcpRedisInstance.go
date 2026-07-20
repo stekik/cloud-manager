@@ -20,7 +20,7 @@ func loadKcpRedisInstance(ctx context.Context, st composed.State) (error, contex
 		}
 		return composed.LogErrorAndReturn(
 			errors.New("SKR AlicloudRedisInstance has no status.id"),
-			"SKR AlicloudRedisInstance has no status.id — requeuing",
+			"SKR AlicloudRedisInstance has no status.id - requeuing",
 			composed.StopWithRequeue,
 			ctx,
 		)
