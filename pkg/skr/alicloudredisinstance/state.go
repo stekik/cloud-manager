@@ -93,6 +93,10 @@ func (s *State) ShouldModifyKcp() bool {
 		return true
 	}
 
+	if s.KcpRedisInstance.Spec.Instance.Alicloud == nil {
+		return true
+	}
+
 	isInstanceClassDifferent := s.KcpRedisInstance.Spec.Instance.Alicloud.InstanceClass != instanceClass
 	isReadOnlyCountDifferent := s.KcpRedisInstance.Spec.Instance.Alicloud.ReadOnlyCount != readOnlyCount
 
