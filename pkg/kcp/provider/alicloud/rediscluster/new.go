@@ -7,6 +7,7 @@ import (
 	"github.com/kyma-project/cloud-manager/pkg/common/actions"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/kcp/rediscluster/types"
+	"github.com/kyma-project/cloud-manager/pkg/util"
 )
 
 func New(stateFactory StateFactory) composed.Action {
@@ -17,7 +18,7 @@ func New(stateFactory StateFactory) composed.Action {
 		if err != nil {
 			err = fmt.Errorf("error creating new alicloud rediscluster state: %w", err)
 			logger.Error(err, "Error")
-			return composed.StopAndForget, nil
+			return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 		}
 
 		return composed.ComposeActionsNoName(

@@ -96,11 +96,9 @@ func (s *State) ShouldModifyKcp() bool {
 	isInstanceClassDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.InstanceClass != instanceClass
 	isShardCountDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.ShardCount != alicloudRedisCluster.Spec.ShardCount
 	isReplicasPerShardDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard != alicloudRedisCluster.Spec.ReplicasPerShard
-	isEngineVersionDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.EngineVersion != alicloudRedisCluster.Spec.EngineVersion
 
 	return !maps.Equal(s.KcpRedisCluster.Spec.Instance.Alicloud.Parameters, alicloudRedisCluster.Spec.Parameters) ||
 		isInstanceClassDifferent ||
 		isShardCountDifferent ||
-		isReplicasPerShardDifferent ||
-		isEngineVersionDifferent
+		isReplicasPerShardDifferent
 }

@@ -6,6 +6,7 @@ import (
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -36,9 +37,13 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 		changed = true
 	}
 
-	// AuthString was written at CreateInstance time and must not be cleared.
+	// AuthString was written at CreateInstance time. If it is missing now the
+	// password is unrecoverable — surface an error rather than silently proceeding.
 	if kcp.Status.AuthString == "" {
-		changed = true
+		return composed.LogErrorAndReturn(
+			fmt.Errorf("AuthString is empty; password was never persisted or was lost"),
+			"AliCloud r-kvstore cluster has no AuthString",
+			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
 	}
 
 	hasReady := meta.FindStatusCondition(kcp.Status.Conditions, cloudcontrolv1beta1.ConditionTypeReady) != nil

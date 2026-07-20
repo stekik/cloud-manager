@@ -6,6 +6,7 @@ import (
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -52,8 +53,8 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady, cloudresourcesv1beta1.ConditionTypeUpdating).
 			ErrorLogMessage("Error: updating AlicloudRedisCluster status with not ready condition due to KCP error").
-			SuccessLogMsg("Updated and forgot SKR AlicloudRedisCluster status with Error condition").
-			SuccessError(composed.StopAndForget).
+			SuccessLogMsg("Updated SKR AlicloudRedisCluster status with Error condition, requeuing").
+			SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).
 			Run(ctx, state)
 	}
 

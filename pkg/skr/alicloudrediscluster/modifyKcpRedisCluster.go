@@ -40,13 +40,12 @@ func modifyKcpRedisCluster(ctx context.Context, st composed.State) (error, conte
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage("Error: updating AlicloudRedisCluster status with not ready condition due to KCP error").
-			SuccessLogMsg("Updated and forgot SKR AlicloudRedisCluster status with Error condition").
-			SuccessError(composed.StopAndForget).
+			SuccessLogMsg("Updated and stopped SKR AlicloudRedisCluster status with Error condition").
+			SuccessError(composed.StopWithRequeue).
 			Run(ctx, state)
 	}
 
 	state.KcpRedisCluster.Spec.Instance.Alicloud.InstanceClass = instanceClass
-	state.KcpRedisCluster.Spec.Instance.Alicloud.EngineVersion = alicloudRedisCluster.Spec.EngineVersion
 	state.KcpRedisCluster.Spec.Instance.Alicloud.ShardCount = alicloudRedisCluster.Spec.ShardCount
 	state.KcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard = alicloudRedisCluster.Spec.ReplicasPerShard
 	state.KcpRedisCluster.Spec.Instance.Alicloud.Parameters = alicloudRedisCluster.Spec.Parameters
