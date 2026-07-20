@@ -70,7 +70,7 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeError, cloudresourcesv1beta1.ConditionTypeUpdating).
 			ErrorLogMessage("Error updating SKR AlicloudRedisCluster status with ready condition").
-			SuccessError(composed.StopWithRequeue).
+			SuccessErrorNil().
 			Run(ctx, state)
 	}
 

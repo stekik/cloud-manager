@@ -61,21 +61,8 @@ func (r *reconciler) newAction() composed.Action {
 		loadKcpRedisInstance,
 		loadAuthSecret,
 
-		// delete ================================================================================
-		composed.If(composed.MarkedForDeletionPredicate,
-			composed.ComposeActionsNoName(
-				removeAuthSecretFinalizer,
-				deleteAuthSecret,
-				waitAuthSecretDeleted,
-				deleteKcpRedisInstance,
-				waitKcpRedisInstanceDeleted,
-				actions.RemoveCommonFinalizer(),
-				composed.StopAndForgetAction,
-			),
-		),
-
-		// create/update =========================================================================
-		composed.If(composed.NotMarkedForDeletionPredicate,
+		// delete / create+update ================================================================
+		composed.IfElse(composed.Not(composed.MarkedForDeletionPredicate),
 			composed.ComposeActionsNoName(
 				actions.AddCommonFinalizer(),
 				createKcpRedisInstance,
@@ -86,6 +73,15 @@ func (r *reconciler) newAction() composed.Action {
 				createAuthSecret,
 				loadAuthSecret,
 				modifyAuthSecret,
+			),
+			composed.ComposeActionsNoName(
+				removeAuthSecretFinalizer,
+				deleteAuthSecret,
+				waitAuthSecretDeleted,
+				deleteKcpRedisInstance,
+				waitKcpRedisInstanceDeleted,
+				actions.RemoveCommonFinalizer(),
+				composed.StopAndForgetAction,
 			),
 		),
 

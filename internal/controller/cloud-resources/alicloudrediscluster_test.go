@@ -161,7 +161,7 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 		})
 	})
 
-	It("Scenario: SKR AlicloudRedisCluster redisTier and shardCount are changed", func() {
+	It("Scenario: SKR AlicloudRedisCluster redisTier is changed", func() {
 
 		skrIpRangeName := uuid.NewString()
 		skrIpRange := &cloudresourcesv1beta1.IpRange{}

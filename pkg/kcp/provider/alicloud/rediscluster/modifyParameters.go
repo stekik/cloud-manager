@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
 
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -12,6 +13,7 @@ import (
 // modifyParameters calls ModifyInstanceConfig when the desired parameters in
 // the KCP spec diverge from the current config persisted on the cluster.
 // The AliCloud API accepts the config as a JSON object string.
+// An empty desired map sends "{}" to clear all custom parameters.
 func modifyParameters(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	if state.instance == nil {
@@ -22,9 +24,6 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 		return nil, ctx
 	}
 	desired := kcp.Spec.Instance.Alicloud.Parameters
-	if len(desired) == 0 {
-		return nil, ctx
-	}
 
 	// Parse current config from instance. AliCloud stores the full config object
 	// including defaults, so we unmarshal into map[string]interface{} and convert
@@ -39,26 +38,24 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 		}
 	}
 
-	// No change needed when every desired key already matches the current value.
-	allMatch := true
-	for k, v := range desired {
-		if current[k] != v {
-			allMatch = false
-			break
-		}
-	}
-	if allMatch {
+	if maps.Equal(desired, current) {
 		return nil, ctx
 	}
 
-	configBytes, err := json.Marshal(desired)
-	if err != nil {
-		return composed.LogErrorAndReturn(err,
-			"Error marshalling AliCloud r-kvstore cluster parameters",
-			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+	var configStr string
+	if len(desired) == 0 {
+		configStr = "{}"
+	} else {
+		configBytes, err := json.Marshal(desired)
+		if err != nil {
+			return composed.LogErrorAndReturn(err,
+				"Error marshalling AliCloud r-kvstore cluster parameters",
+				composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+		}
+		configStr = string(configBytes)
 	}
 
-	if err := state.client.ModifyInstanceConfig(ctx, state.instance.InstanceId, string(configBytes)); err != nil {
+	if err := state.client.ModifyInstanceConfig(ctx, state.instance.InstanceId, configStr); err != nil {
 		return composed.LogErrorAndReturn(err,
 			"Error modifying AliCloud r-kvstore cluster config",
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)

@@ -16,6 +16,9 @@ import (
 // create operation.
 func waitKcpStatusUpdate(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
+	if state.KcpRedisInstance == nil {
+		return composed.StopWithRequeue, nil
+	}
 	conditions := state.KcpRedisInstance.Status.Conditions
 
 	hasReady := meta.FindStatusCondition(conditions, cloudcontrolv1beta1.ConditionTypeReady) != nil
