@@ -10,7 +10,7 @@ import (
 )
 
 // waitSkrStatusReady waits until the SKR object has either a Ready or Error
-// condition before continuing. It does not poll the state string — it checks
+// condition before continuing. It does not poll the state string - it checks
 // for the condition so that both happy-path (Ready) and error-path (Error)
 // allow the pipeline to advance and react immediately.
 func waitSkrStatusReady(ctx context.Context, st composed.State) (error, context.Context) {

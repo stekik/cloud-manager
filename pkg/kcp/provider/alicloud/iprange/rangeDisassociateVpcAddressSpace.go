@@ -29,7 +29,7 @@ func rangeDisassociateVpcAddressSpace(ctx context.Context, st composed.State) (e
 	err := state.client.UnassociateVpcCidrBlock(ctx, state.vpcId, cidr)
 	if err != nil {
 		if ipclient.IsCidrInUseErr(err) {
-			logger.Error(err, "CIDR block still in use by a vSwitch — manual vSwitch deletion required before IpRange can be deleted",
+			logger.Error(err, "CIDR block still in use by a vSwitch - manual vSwitch deletion required before IpRange can be deleted",
 				"vpcId", state.vpcId, "cidr", cidr)
 
 			state.ObjAsIpRange().Status.State = cloudcontrolv1beta1.StateError

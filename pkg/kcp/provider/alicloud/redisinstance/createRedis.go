@@ -53,7 +53,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
 	}
 
-	// Generate password before CreateInstance — AliCloud never returns it after.
+	// Generate password before CreateInstance 0 - AliCloud never returns it after.
 	// Persist it before calling CreateInstance so a crash after the API call but
 	// before status write does not lose the password on the next retry (the
 	// idempotency Token returns the same instance; we must not regenerate).
@@ -77,7 +77,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	allZonesFailed := true
 	for _, vSwitchId := range vSwitchIds {
 		// Include vSwitchId in the token so each (class, vSwitch) pair has its
-		// own idempotency token — AliCloud rejects same token with different params.
+		// own idempotency token - AliCloud rejects same token with different params.
 		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId
 		tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(tokenInput)))[:32]
 
@@ -103,7 +103,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			logger.Info("AliCloud r-kvstore: vSwitch zone not supported for instance class, trying next", "vSwitchId", vSwitchId, "instanceClass", kcp.Spec.Instance.Alicloud.InstanceClass)
 			continue
 		}
-		// Non-zone error — stop iterating and handle below.
+		// Non-zone error - stop iterating and handle below.
 		allZonesFailed = false
 		break
 	}
@@ -122,7 +122,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 				"Error updating RedisInstance status after failed CreateInstance",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 		}
-		// When every zone rejected the instance class, don't give up permanently —
+		// When every zone rejected the instance class, don't give up permanently -
 		// the user may add subnets in a compatible zone later.
 		if allZonesFailed {
 			return composed.StopWithRequeueDelay(util.Timing.T300000ms()), ctx

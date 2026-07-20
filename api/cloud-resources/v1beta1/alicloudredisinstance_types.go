@@ -39,7 +39,7 @@ type AlicloudRedisInstanceSpec struct {
 	RedisTier AlicloudRedisTier `json:"redisTier"`
 
 	// EngineVersion is the Redis engine version. Immutable after creation.
-	// Only "5.0" is supported — local-disk and amber-multithread classes used
+	// Only "5.0" is supported - local-disk and amber-multithread classes used
 	// by the AliCloud tier map do not support 6.0 or 7.0 in international regions.
 	// +optional
 	// +kubebuilder:default="5.0"

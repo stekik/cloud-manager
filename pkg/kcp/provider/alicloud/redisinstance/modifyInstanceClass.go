@@ -12,7 +12,7 @@ import (
 // modifyInstanceClass issues a ModifyInstanceSpec if the desired InstanceClass
 // or ReadOnlyCount drift from the observed state. Per issue #2012 design
 // decision 8, InstanceClass changes must not be combined with ShardCount
-// changes in the same call — this action never touches ShardCount, that is
+// changes in the same call - this action never touches ShardCount, that is
 // handled by the cluster-specific modifyShardCount action.
 func modifyInstanceClass(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
@@ -28,7 +28,7 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 
 	classDrift := desiredClass != "" && desiredClass != state.instance.InstanceClass
 	// Some classes (tair.rdb.*, redis.amber.master.*.multithread) silently ignore
-	// ReadOnlyCount — the field is absent from DescribeInstanceAttribute and
+	// ReadOnlyCount - the field is absent from DescribeInstanceAttribute and
 	// ModifyInstanceSpec has no effect. Skip drift detection for those classes to
 	// avoid an infinite modify loop.
 	readOnlyDrift := !alicloudclient.IsReadOnlyCountUnsupported(state.instance.InstanceClass) &&

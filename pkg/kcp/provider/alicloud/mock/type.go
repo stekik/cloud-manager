@@ -86,7 +86,7 @@ type Providers interface {
 	RedisClusterClientProvider() alicloudredisclusterclient.ClientProvider
 }
 
-// Server is the top-level mock — owns accounts and yields providers.
+// Server is the top-level mock - owns accounts and yields providers.
 type Server interface {
 	Providers
 

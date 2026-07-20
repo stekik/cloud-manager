@@ -41,7 +41,7 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 	}
 
 	// AuthString was written at CreateInstance time. If it is missing now the
-	// password is unrecoverable — surface an error rather than silently proceeding.
+	// password is unrecoverable - surface an error rather than silently proceeding.
 	if kcp.Status.AuthString == "" {
 		return composed.LogErrorAndReturn(
 			fmt.Errorf("AuthString is empty; password was never persisted or was lost"),
