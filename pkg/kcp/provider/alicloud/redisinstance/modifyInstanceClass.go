@@ -57,5 +57,5 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 
 	// Force re-load next reconcile.
 	state.instance = nil
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

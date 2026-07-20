@@ -8,6 +8,7 @@ import (
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/common"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	"github.com/kyma-project/cloud-manager/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -36,7 +37,7 @@ func createKcpRedisCluster(ctx context.Context, st composed.State) (error, conte
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage("Error: updating AlicloudRedisCluster status with not ready condition due to KCP error").
 			SuccessLogMsg("Updated and stopped SKR AlicloudRedisCluster status with Error condition").
-			SuccessError(composed.StopWithRequeue).
+			SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).
 			Run(ctx, state)
 	}
 

@@ -274,8 +274,10 @@ func (c *alicloudRedisClient) DescribeInstance(ctx context.Context, instanceId s
 	if err != nil {
 		return nil, fmt.Errorf("error describing alicloud r-kvstore instance %s: %w", instanceId, err)
 	}
-	if resp == nil || resp.Body == nil || resp.Body.Instances == nil ||
-		len(resp.Body.Instances.DBInstanceAttribute) == 0 {
+	if resp == nil || resp.Body == nil || resp.Body.Instances == nil {
+		return nil, fmt.Errorf("empty response from alicloud r-kvstore DescribeInstanceAttribute for %s", instanceId)
+	}
+	if len(resp.Body.Instances.DBInstanceAttribute) == 0 {
 		return nil, nil
 	}
 	a := resp.Body.Instances.DBInstanceAttribute[0]

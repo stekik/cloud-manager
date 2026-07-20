@@ -38,7 +38,7 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 	if classDrift {
 		opts.InstanceClass = desiredClass
 	}
-	if !alicloudclient.IsProxyClusterClass(desiredClass) {
+	if !alicloudclient.IsProxyClusterClass(desiredClass) && replicasDrift {
 		opts.ReadOnlyCount = tea.Int32(desiredReplicas)
 	}
 

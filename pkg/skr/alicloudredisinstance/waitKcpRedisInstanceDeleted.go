@@ -32,7 +32,7 @@ func waitKcpRedisInstanceDeleted(ctx context.Context, st composed.State) (error,
 				Reason:  cloudresourcesv1beta1.ConditionReasonError,
 				Message: kcpCondErr.Message,
 			}).
-			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
+			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady, cloudresourcesv1beta1.ConditionTypeUpdating).
 			ErrorLogMessage("Error: updating AlicloudRedisInstance status with not ready condition due to KCP error").
 			SuccessLogMsg("Updated SKR AlicloudRedisInstance status with Error condition, requeuing").
 			SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).

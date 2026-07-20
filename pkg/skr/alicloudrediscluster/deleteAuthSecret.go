@@ -43,5 +43,5 @@ func deleteAuthSecret(ctx context.Context, st composed.State) (error, context.Co
 		return composed.LogErrorAndReturn(err, "Error deleting AuthSecret for AlicloudRedisCluster", composed.StopWithRequeue, ctx)
 	}
 
-	return composed.StopWithRequeue, nil
+	return composed.StopWithRequeue, ctx
 }

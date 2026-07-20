@@ -42,7 +42,7 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage("Error: updating AlicloudRedisInstance status with updating conditions").
-			SuccessError(composed.StopWithRequeue).
+			SuccessErrorNil().
 			Run(ctx, state)
 	}
 
