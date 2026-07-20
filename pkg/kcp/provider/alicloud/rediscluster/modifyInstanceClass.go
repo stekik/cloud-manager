@@ -10,8 +10,8 @@ import (
 )
 
 // modifyInstanceClass issues ModifyInstanceSpec if the desired InstanceClass
-// or ReplicasPerShard drifts from the observed state. Per issue #2012 design
-// decision 8, this must NOT change ShardCount in the same call.
+// or ReadOnlyCount (for non-proxy classes) drifts from the observed state.
+// ShardCount changes are handled by modifyShardCount.
 func modifyInstanceClass(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	if state.instance == nil {
@@ -34,11 +34,12 @@ func modifyInstanceClass(ctx context.Context, st composed.State) (error, context
 		return nil, ctx
 	}
 
-	opts := alicloudclient.ModifyInstanceSpecOptions{
-		ReadOnlyCount: tea.Int32(desiredReplicas),
-	}
+	opts := alicloudclient.ModifyInstanceSpecOptions{}
 	if classDrift {
 		opts.InstanceClass = desiredClass
+	}
+	if !alicloudclient.IsProxyClusterClass(desiredClass) {
+		opts.ReadOnlyCount = tea.Int32(desiredReplicas)
 	}
 
 	if err := state.client.ModifyInstanceSpec(ctx, state.instance.InstanceId, opts); err != nil {

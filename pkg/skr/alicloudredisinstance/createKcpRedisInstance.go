@@ -35,7 +35,7 @@ func createKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage("Error: updating AlicloudRedisInstance status with not ready condition due to KCP error").
-			SuccessLogMsg("Updated and forgot SKR AlicloudRedisInstance status with Error condition").
+			SuccessLogMsg("Updated and stopped SKR AlicloudRedisInstance status with Error condition").
 			SuccessError(composed.StopWithRequeue).
 			Run(ctx, state)
 	}

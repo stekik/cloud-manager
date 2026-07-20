@@ -15,6 +15,9 @@ func loadKcpRedisCluster(ctx context.Context, st composed.State) (error, context
 	logger := composed.LoggerFromCtx(ctx)
 
 	if state.ObjAsAlicloudRedisCluster().Status.Id == "" {
+		if composed.MarkedForDeletionPredicate(ctx, st) {
+			return nil, ctx
+		}
 		return composed.LogErrorAndReturn(
 			errors.New("missing SKR AlicloudRedisCluster state.id"),
 			"Logical error in loadKcpRedisCluster",

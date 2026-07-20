@@ -19,13 +19,13 @@ func deleteRedis(ctx context.Context, st composed.State) (error, context.Context
 		return nil, ctx
 	}
 	if state.instance.InstanceStatus == alicloudclient.InstanceStatusCreating {
-		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	}
 
 	if err := state.client.DeleteInstance(ctx, state.instance.InstanceId); err != nil {
 		logger.Error(err, "Error deleting AliCloud r-kvstore cluster instance")
-		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	}
 	state.instance = nil
-	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 }

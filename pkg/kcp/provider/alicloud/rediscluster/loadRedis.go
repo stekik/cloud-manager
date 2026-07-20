@@ -25,14 +25,22 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 		info, err := state.client.DescribeInstance(ctx, instanceId)
 		if err != nil {
 			if alicloudclient.IsNotFoundErr(err) {
-				// Instance already gone — treat as not found so deletion can proceed.
+				// Instance no longer exists on AliCloud — clear the stale ID so the
+				// create path can re-provision (or delete path can skip cleanly).
+				logger.Info("AliCloud r-kvstore cluster not found, clearing stale ID", "instanceId", instanceId)
+				state.ObjAsRedisCluster().Status.Id = ""
+				if updErr := state.UpdateObjStatus(ctx); updErr != nil {
+					return composed.LogErrorAndReturn(updErr,
+						"Error clearing stale AliCloud r-kvstore cluster instance ID",
+						composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
+				}
 				return nil, ctx
 			}
 			logger.Error(err, "Error describing AliCloud r-kvstore cluster instance")
 			meta.SetStatusCondition(state.ObjAsRedisCluster().Conditions(), metav1.Condition{
 				Type:    cloudcontrolv1beta1.ConditionTypeError,
 				Status:  metav1.ConditionTrue,
-				Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisCluster,
+				Reason:  cloudcontrolv1beta1.ReasonUnknown,
 				Message: fmt.Sprintf("Failed loading AlicloudRedisCluster: %s", err),
 			})
 			if updErr := state.UpdateObjStatus(ctx); updErr != nil {
