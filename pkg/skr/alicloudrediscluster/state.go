@@ -93,6 +93,10 @@ func (s *State) ShouldModifyKcp() bool {
 		return true
 	}
 
+	if s.KcpRedisCluster.Spec.Instance.Alicloud == nil {
+		return true
+	}
+
 	isInstanceClassDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.InstanceClass != instanceClass
 	isShardCountDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.ShardCount != alicloudRedisCluster.Spec.ShardCount
 	isReplicasPerShardDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard != alicloudRedisCluster.Spec.ReplicasPerShard

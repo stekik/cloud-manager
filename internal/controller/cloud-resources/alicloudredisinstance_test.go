@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
@@ -356,6 +357,114 @@ var _ = Describe("Feature: SKR AlicloudRedisInstance", func() {
 				}
 				return len(kcpRedisInstance.Spec.Instance.Alicloud.Parameters) == 0
 			}).Should(BeTrue(), "expected KCP RedisInstance parameters to be cleared")
+		})
+
+		// DELETE
+
+		By("When AlicloudRedisInstance is deleted", func() {
+			Eventually(Delete).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance).
+				Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisInstance does not exist", func() {
+			Eventually(IsDeleted).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance).
+				Should(Succeed())
+		})
+	})
+
+	It("Scenario: SKR AlicloudRedisInstance reflects Updating condition from KCP", func() {
+
+		skrIpRangeName := uuid.NewString()
+		skrIpRange := &cloudresourcesv1beta1.IpRange{}
+		skrIpRangeId := uuid.NewString()
+
+		By("And Given SKR IpRange exists", func() {
+			skriprange.Ignore.AddName(skrIpRangeName)
+			Eventually(CreateSkrIpRange).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
+					WithName(skrIpRangeName),
+				).Should(Succeed())
+		})
+
+		By("And Given SKR IpRange has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
+					WithSkrIpRangeStatusCidr(skrIpRange.Spec.Cidr),
+					WithSkrIpRangeStatusId(skrIpRangeId),
+					WithConditions(SkrReadyCondition()),
+				).Should(Succeed())
+		})
+
+		alicloudRedisInstanceName := uuid.NewString()
+		alicloudRedisInstance := &cloudresourcesv1beta1.AlicloudRedisInstance{}
+
+		By("When AlicloudRedisInstance is created", func() {
+			Eventually(CreateAlicloudRedisInstance).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					WithName(alicloudRedisInstanceName),
+					WithIpRange(skrIpRange.Name),
+					WithAlicloudRedisInstanceRedisTier(cloudresourcesv1beta1.AlicloudRedisTierS1),
+					WithAlicloudRedisInstanceEngineVersion("5.0"),
+				).Should(Succeed())
+		})
+
+		kcpRedisInstance := &cloudcontrolv1beta1.RedisInstance{}
+
+		By("Then KCP RedisInstance is created", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					NewObjActions(),
+					HavingFieldSet("status", "id"),
+				).Should(Succeed())
+
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisInstance,
+					NewObjActions(WithName(alicloudRedisInstance.Status.Id)),
+				).Should(Succeed())
+		})
+
+		By("When KCP RedisInstance has Updating condition (alongside Ready)", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisInstance,
+					WithConditions(
+						KcpReadyCondition(),
+						metav1.Condition{
+							Type:    cloudcontrolv1beta1.ConditionTypeUpdating,
+							Status:  metav1.ConditionTrue,
+							Reason:  cloudcontrolv1beta1.ConditionTypeUpdating,
+							Message: "Instance is updating",
+						},
+					),
+				).Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisInstance reflects StateUpdating", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					NewObjActions(),
+					HavingConditionTrue(cloudresourcesv1beta1.ConditionTypeUpdating),
+					HavingFieldValue(cloudresourcesv1beta1.StateUpdating, "status", "state"),
+				).Should(Succeed())
+		})
+
+		By("When KCP RedisInstance transitions to Ready", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisInstance,
+					WithRedisInstancePrimaryEndpoint("r-updating-test.redis.rds.aliyuncs.com:6379"),
+					WithRedisInstanceAuthString(uuid.NewString()),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisInstance transitions to Ready and Updating condition is removed", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisInstance,
+					NewObjActions(),
+					HavingConditionTrue(cloudresourcesv1beta1.ConditionTypeReady),
+					HavingFieldValue(cloudresourcesv1beta1.StateReady, "status", "state"),
+				).Should(Succeed())
 		})
 
 		// DELETE

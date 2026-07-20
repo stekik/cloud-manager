@@ -17,7 +17,7 @@ import (
 func waitKcpStatusUpdate(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	if state.KcpRedisInstance == nil {
-		return composed.StopWithRequeue, nil
+		return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 	}
 	conditions := state.KcpRedisInstance.Status.Conditions
 
