@@ -11,10 +11,6 @@ apiDisabled:
       query: provider == "openstack" and feature == "nfs"
       variation: disabled
 
-    - name: Enable AliCloud RedisCluster
-      query: provider == "alicloud" and feature == "rediscluster"
-      variation: enabled
-
     - name: Disable RedisCluster
       query: feature == "rediscluster"
       variation: disabled
