@@ -49,7 +49,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
 	}
 
-	// Generate password before CreateInstance — AliCloud never returns it after.
+	// Generate password before CreateInstance - AliCloud never returns it after.
 	// Persist it before calling CreateInstance so a crash after the API call but
 	// before status write does not lose the password on the next retry.
 	password := kcp.Status.AuthString
@@ -70,8 +70,8 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	var lastErr error
 	allZonesFailed := true
 	for _, vSwitchId := range vSwitchIds {
-		// "v2" suffix rotates tokens away from v1 tokens that included ReadOnlyCount.
-		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId + "v2"
+		// "v3" suffix rotates tokens away from v2 tokens that omitted ReadOnlyCount.
+		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId + "v3"
 		tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(tokenInput)))[:32]
 
 		opts := alicloudclient.CreateInstanceOptions{
@@ -82,6 +82,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			VSwitchId:     vSwitchId,
 			Password:      password,
 			ShardCount:    kcp.Spec.Instance.Alicloud.ShardCount,
+			ReadOnlyCount: kcp.Spec.Instance.Alicloud.ReplicasPerShard,
 			Token:         tokenHash,
 		}
 		var err error

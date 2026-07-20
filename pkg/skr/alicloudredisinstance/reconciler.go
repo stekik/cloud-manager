@@ -51,7 +51,7 @@ func (r *reconciler) Reconcile(ctx context.Context, request reconcile.Request) (
 }
 
 func (r *reconciler) newAction() composed.Action {
-	return composed.ComposeActionsNoName(
+	return composed.ComposeActions("alicloudRedisInstance",
 		feature.LoadFeatureContextFromObj(&cloudresourcesv1beta1.AlicloudRedisInstance{}),
 		composed.LoadObj,
 

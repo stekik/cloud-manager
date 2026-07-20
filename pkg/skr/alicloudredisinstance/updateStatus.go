@@ -15,6 +15,10 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 	state := st.(*State)
 	logger := composed.LoggerFromCtx(ctx)
 
+	if state.KcpRedisInstance == nil {
+		return nil, ctx
+	}
+
 	alicloudRedisInstance := state.ObjAsAlicloudRedisInstance()
 
 	kcpCondErr := meta.FindStatusCondition(state.KcpRedisInstance.Status.Conditions, cloudcontrolv1beta1.ConditionTypeError)
