@@ -70,5 +70,5 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 
 	// Force re-load next reconcile to pick up the updated Config field.
 	state.instance = nil
-	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 }

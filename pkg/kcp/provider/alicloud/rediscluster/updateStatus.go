@@ -50,7 +50,7 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 	hasReadyState := kcp.Status.State == cloudcontrolv1beta1.StateReady
 
 	if !changed && hasReady && hasReadyState {
-		return composed.StopAndForget, nil
+		return composed.StopAndForget, ctx
 	}
 	kcp.Status.State = cloudcontrolv1beta1.StateReady
 

@@ -23,5 +23,5 @@ func waitAuthSecretDeleted(ctx context.Context, st composed.State) (error, conte
 
 	logger.Info("Waiting for Auth Secret to be deleted")
 
-	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), nil
+	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 }
