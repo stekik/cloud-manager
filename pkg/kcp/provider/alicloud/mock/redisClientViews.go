@@ -32,6 +32,14 @@ func (c *redisInstanceClientView) ModifyInstanceConfig(ctx context.Context, inst
 	return c.modifyInstanceConfig(ctx, instanceId, config)
 }
 
+func (c *redisInstanceClientView) ModifySecurityIps(ctx context.Context, instanceId, securityIps string) error {
+	return c.modifySecurityIps(ctx, instanceId, securityIps)
+}
+
+func (c *redisInstanceClientView) DescribeSecurityIps(ctx context.Context, instanceId string) (string, error) {
+	return c.describeSecurityIps(ctx, instanceId)
+}
+
 func (c *redisInstanceClientView) DeleteInstance(ctx context.Context, instanceId string) error {
 	return c.deleteInstance(ctx, instanceId)
 }
@@ -63,6 +71,14 @@ func (c *redisClusterClientView) ModifyInstanceSpec(ctx context.Context, instanc
 
 func (c *redisClusterClientView) ModifyInstanceConfig(ctx context.Context, instanceId, config string) error {
 	return c.modifyInstanceConfig(ctx, instanceId, config)
+}
+
+func (c *redisClusterClientView) ModifySecurityIps(ctx context.Context, instanceId, securityIps string) error {
+	return c.modifySecurityIps(ctx, instanceId, securityIps)
+}
+
+func (c *redisClusterClientView) DescribeSecurityIps(ctx context.Context, instanceId string) (string, error) {
+	return c.describeSecurityIps(ctx, instanceId)
 }
 
 func (c *redisClusterClientView) DeleteInstance(ctx context.Context, instanceId string) error {

@@ -386,6 +386,24 @@ func (s *redisStore) modifyInstanceConfig(ctx context.Context, instanceId, confi
 	return fmt.Errorf("instance %s not found", instanceId)
 }
 
+func (s *redisStore) modifySecurityIps(_ context.Context, instanceId, _ string) error {
+	s.m.Lock()
+	defer s.m.Unlock()
+	if s.instances[instanceId] == nil && s.clusters[instanceId] == nil {
+		return fmt.Errorf("instance %s not found", instanceId)
+	}
+	return nil
+}
+
+func (s *redisStore) describeSecurityIps(_ context.Context, instanceId string) (string, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	if s.instances[instanceId] == nil && s.clusters[instanceId] == nil {
+		return "", fmt.Errorf("instance %s not found", instanceId)
+	}
+	return "", nil
+}
+
 // === Cluster-client ops (add/delete shards, absolute target) ================
 
 func (s *redisStore) addShardingNode(ctx context.Context, instanceId string, targetShardCount int32) error {
