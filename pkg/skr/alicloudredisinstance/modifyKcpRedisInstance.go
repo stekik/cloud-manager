@@ -17,8 +17,10 @@ func modifyKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 	alicloudRedisInstance := state.ObjAsAlicloudRedisInstance()
 
 	if state.KcpRedisInstance == nil {
-		logger.Error(fmt.Errorf("kcpRedisInstance not found"), "KcpRedisInstance not found")
-		return composed.StopWithRequeue, ctx
+		return composed.LogErrorAndReturn(
+			fmt.Errorf("kcpRedisInstance not found"),
+			"KcpRedisInstance not found",
+			composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 	}
 
 	shouldModifyKcp := state.ShouldModifyKcp()
