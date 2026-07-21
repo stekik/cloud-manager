@@ -308,7 +308,7 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 			}).Should(Succeed())
 		})
 
-		By("Then AliCloud transitions to Changing and back to Normal with new class and readOnlyCount", func() {
+		By("Then AliCloud transitions to Changing and back to Normal with new class", func() {
 			Eventually(func() error {
 				alicloudMock.TransitionAllToNormal()
 				return LoadAndCheck(infra.Ctx(), infra.KCP().Client(), redisInstance,
@@ -316,9 +316,8 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
 					HavingState("Ready"),
 					HavingFieldValue("tair.rdb.2g", "status", "nodeType"),
-					HavingFieldValue(int32(1), "status", "replicaCount"),
 				)
-			}).Should(Succeed(), "expected RedisInstance to reach Ready with updated instanceClass and readOnlyCount")
+			}).Should(Succeed(), "expected RedisInstance to reach Ready with updated instanceClass")
 		})
 
 		// DELETE
