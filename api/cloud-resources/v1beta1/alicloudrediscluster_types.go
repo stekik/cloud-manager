@@ -36,11 +36,10 @@ type AlicloudRedisClusterSpec struct {
 	// +kubebuilder:validation:Required
 	RedisTier AlicloudRedisClusterTier `json:"redisTier"`
 
-	// ShardCount is the number of data shards.
+	// ShardCount is the number of data shards. Mutable via ModifyShardingNum.
 	// +kubebuilder:validation:Required
 	// +kubebuilder:validation:Minimum=1
 	// +kubebuilder:validation:Maximum=32
-	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="shardCount is immutable."
 	ShardCount int32 `json:"shardCount"`
 
 	// ReplicasPerShard: 0 = no replica per shard, 1 = HA per shard.
@@ -50,11 +49,13 @@ type AlicloudRedisClusterSpec struct {
 	// +kubebuilder:validation:Maximum=1
 	ReplicasPerShard int32 `json:"replicasPerShard"`
 
-	// EngineVersion is the Redis engine version. Immutable after creation.
+	// EngineVersion is the Redis engine version. Upgrades are allowed; downgrades are not.
 	// +optional
 	// +kubebuilder:default="7.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
-	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
+	// +kubebuilder:validation:XValidation:rule=(self != "5.0" || oldSelf == "5.0"),message="engineVersion cannot be downgraded."
+	// +kubebuilder:validation:XValidation:rule=(self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0"),message="engineVersion cannot be downgraded."
+	// +kubebuilder:validation:XValidation:rule=(self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" || oldSelf == "5.0"),message="engineVersion cannot be downgraded."
 	EngineVersion string `json:"engineVersion"`
 
 	// Parameters are passed to the AliCloud instance as runtime configuration.
