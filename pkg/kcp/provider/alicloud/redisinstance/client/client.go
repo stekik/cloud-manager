@@ -113,6 +113,15 @@ type Client interface {
 	// ModifyInstanceConfig applies runtime configuration parameters encoded as
 	// a JSON string (e.g. `{"maxmemory-policy":"noeviction"}`).
 	ModifyInstanceConfig(ctx context.Context, instanceId, config string) error
+	// DescribeSecurityIps returns the comma-separated IP list for the "default"
+	// security group on an instance. Returns an empty string when the group is
+	// absent (e.g. newly created instance that only has 127.0.0.1).
+	DescribeSecurityIps(ctx context.Context, instanceId string) (string, error)
+	// ModifySecurityIps replaces the default security IP group with securityIps
+	// (comma-separated CIDR list). AliCloud Redis instances are created with
+	// security IPs set to 127.0.0.1, blocking all external access. This must be
+	// called after CreateInstance to allow VPC traffic to reach the instance.
+	ModifySecurityIps(ctx context.Context, instanceId, securityIps string) error
 	DeleteInstance(ctx context.Context, instanceId string) error
 	ResetAccountPassword(ctx context.Context, instanceId, accountName, password string) error
 }
@@ -397,4 +406,36 @@ func (c *alicloudRedisClient) ModifyInstanceConfig(ctx context.Context, instance
 		return fmt.Errorf("error modifying alicloud r-kvstore instance %s config: %w", instanceId, err)
 	}
 	return nil
+}
+
+func (c *alicloudRedisClient) ModifySecurityIps(ctx context.Context, instanceId, securityIps string) error {
+	req := &rkvstore.ModifySecurityIpsRequest{
+		InstanceId:          new(instanceId),
+		SecurityIps:         new(securityIps),
+		SecurityIpGroupName: new("default"),
+		ModifyMode:          new("Cover"),
+	}
+	if _, err := c.c.ModifySecurityIps(req); err != nil {
+		return fmt.Errorf("error modifying alicloud r-kvstore instance %s security IPs: %w", instanceId, err)
+	}
+	return nil
+}
+
+func (c *alicloudRedisClient) DescribeSecurityIps(ctx context.Context, instanceId string) (string, error) {
+	req := &rkvstore.DescribeSecurityIpsRequest{
+		InstanceId: new(instanceId),
+	}
+	resp, err := c.c.DescribeSecurityIps(req)
+	if err != nil {
+		return "", fmt.Errorf("error describing alicloud r-kvstore instance %s security IPs: %w", instanceId, err)
+	}
+	if resp == nil || resp.Body == nil || resp.Body.SecurityIpGroups == nil {
+		return "", nil
+	}
+	for _, g := range resp.Body.SecurityIpGroups.SecurityIpGroup {
+		if tea.StringValue(g.SecurityIpGroupName) == "default" {
+			return tea.StringValue(g.SecurityIpList), nil
+		}
+	}
+	return "", nil
 }
