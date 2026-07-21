@@ -92,55 +92,31 @@ var _ = Describe("Feature: SKR AlicloudRedisInstance", Ordered, func() {
 
 	Context("Scenario: engineVersion validation", func() {
 
-		canChangeSkr(
-			"AlicloudRedisInstance engineVersion can be upgraded from 5.0 to 6.0",
+		canNotChangeSkr(
+			"AlicloudRedisInstance engineVersion cannot be changed from 5.0 to 6.0",
 			newTestAlicloudRedisInstanceBuilder().WithEngineVersion("5.0"),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisInstance]) {
 				b.(*testAlicloudRedisInstanceBuilder).WithEngineVersion("6.0")
 			},
-		)
-
-		canChangeSkr(
-			"AlicloudRedisInstance engineVersion can be upgraded from 6.0 to 7.0",
-			newTestAlicloudRedisInstanceBuilder().WithEngineVersion("6.0"),
-			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisInstance]) {
-				b.(*testAlicloudRedisInstanceBuilder).WithEngineVersion("7.0")
-			},
-		)
-
-		canChangeSkr(
-			"AlicloudRedisInstance engineVersion can be upgraded from 5.0 to 7.0",
-			newTestAlicloudRedisInstanceBuilder().WithEngineVersion("5.0"),
-			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisInstance]) {
-				b.(*testAlicloudRedisInstanceBuilder).WithEngineVersion("7.0")
-			},
+			"engineVersion is immutable.",
 		)
 
 		canNotChangeSkr(
-			"AlicloudRedisInstance engineVersion cannot be downgraded from 7.0 to 6.0",
+			"AlicloudRedisInstance engineVersion cannot be changed from 7.0 to 6.0",
 			newTestAlicloudRedisInstanceBuilder().WithEngineVersion("7.0"),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisInstance]) {
 				b.(*testAlicloudRedisInstanceBuilder).WithEngineVersion("6.0")
 			},
-			"engineVersion cannot be downgraded.",
+			"engineVersion is immutable.",
 		)
 
 		canNotChangeSkr(
-			"AlicloudRedisInstance engineVersion cannot be downgraded from 7.0 to 5.0",
-			newTestAlicloudRedisInstanceBuilder().WithEngineVersion("7.0"),
-			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisInstance]) {
-				b.(*testAlicloudRedisInstanceBuilder).WithEngineVersion("5.0")
-			},
-			"engineVersion cannot be downgraded.",
-		)
-
-		canNotChangeSkr(
-			"AlicloudRedisInstance engineVersion cannot be downgraded from 6.0 to 5.0",
+			"AlicloudRedisInstance engineVersion cannot be changed from 6.0 to 5.0",
 			newTestAlicloudRedisInstanceBuilder().WithEngineVersion("6.0"),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisInstance]) {
 				b.(*testAlicloudRedisInstanceBuilder).WithEngineVersion("5.0")
 			},
-			"engineVersion cannot be downgraded.",
+			"engineVersion is immutable.",
 		)
 	})
 
