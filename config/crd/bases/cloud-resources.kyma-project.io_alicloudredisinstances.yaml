@@ -76,16 +76,21 @@ spec:
                 type: object
               engineVersion:
                 default: "5.0"
-                description: |-
-                  EngineVersion is the Redis engine version. Immutable after creation.
-                  Only "5.0" is supported - local-disk and amber-multithread classes used
-                  by the AliCloud tier map do not support 6.0 or 7.0 in international regions.
+                description: EngineVersion is the Redis engine version. Upgrades are
+                  allowed; downgrades are not.
                 enum:
                 - "5.0"
+                - "6.0"
+                - "7.0"
                 type: string
                 x-kubernetes-validations:
-                - message: engineVersion is immutable.
-                  rule: (self == oldSelf)
+                - message: engineVersion cannot be downgraded.
+                  rule: (self != "5.0" || oldSelf == "5.0")
+                - message: engineVersion cannot be downgraded.
+                  rule: (self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0")
+                - message: engineVersion cannot be downgraded.
+                  rule: (self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" ||
+                    oldSelf == "5.0")
               ipRange:
                 properties:
                   name:

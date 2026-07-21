@@ -76,16 +76,21 @@ spec:
                 type: object
               engineVersion:
                 default: "7.0"
-                description: EngineVersion is the Redis engine version. Immutable
-                  after creation.
+                description: EngineVersion is the Redis engine version. Upgrades are
+                  allowed; downgrades are not.
                 enum:
                 - "5.0"
                 - "6.0"
                 - "7.0"
                 type: string
                 x-kubernetes-validations:
-                - message: engineVersion is immutable.
-                  rule: (self == oldSelf)
+                - message: engineVersion cannot be downgraded.
+                  rule: (self != "5.0" || oldSelf == "5.0")
+                - message: engineVersion cannot be downgraded.
+                  rule: (self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0")
+                - message: engineVersion cannot be downgraded.
+                  rule: (self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" ||
+                    oldSelf == "5.0")
               ipRange:
                 properties:
                   name:
@@ -121,14 +126,12 @@ spec:
                 minimum: 0
                 type: integer
               shardCount:
-                description: ShardCount is the number of data shards.
+                description: ShardCount is the number of data shards. Mutable via
+                  ModifyShardingNum.
                 format: int32
                 maximum: 32
                 minimum: 1
                 type: integer
-                x-kubernetes-validations:
-                - message: shardCount is immutable.
-                  rule: (self == oldSelf)
             required:
             - redisTier
             - shardCount
