@@ -6,6 +6,7 @@ import (
 
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	"github.com/kyma-project/cloud-manager/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -43,5 +44,5 @@ func deleteAuthSecret(ctx context.Context, st composed.State) (error, context.Co
 		return composed.LogErrorAndReturn(err, "Error deleting AuthSecret for AlicloudRedisInstance", composed.StopWithRequeue, ctx)
 	}
 
-	return composed.StopWithRequeue, ctx
+	return composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx
 }
