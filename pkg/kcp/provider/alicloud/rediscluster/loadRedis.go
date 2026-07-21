@@ -64,7 +64,7 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 	if info != nil {
 		logger.Info("Recovered AliCloud r-kvstore cluster instance by name", "instanceId", info.InstanceId)
 		state.ObjAsRedisCluster().Status.Id = info.InstanceId
-		if updErr := state.UpdateObjStatus(ctx); updErr != nil {
+		if updErr := state.PatchObjStatus(ctx); updErr != nil {
 			return composed.LogErrorAndReturn(updErr,
 				"Error persisting recovered AliCloud r-kvstore cluster instance ID",
 				composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
