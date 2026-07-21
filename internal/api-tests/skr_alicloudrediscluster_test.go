@@ -117,30 +117,31 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", Ordered, func() {
 
 	Context("Scenario: engineVersion validation", func() {
 
-		canChangeSkr(
-			"AlicloudRedisCluster engineVersion can be upgraded from 5.0 to 7.0",
+		canNotChangeSkr(
+			"AlicloudRedisCluster engineVersion cannot be changed from 5.0 to 7.0",
 			newTestAlicloudRedisClusterBuilder().WithEngineVersion("5.0"),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisCluster]) {
 				b.(*testAlicloudRedisClusterBuilder).WithEngineVersion("7.0")
 			},
+			"engineVersion is immutable.",
 		)
 
 		canNotChangeSkr(
-			"AlicloudRedisCluster engineVersion cannot be downgraded from 7.0 to 6.0",
+			"AlicloudRedisCluster engineVersion cannot be changed from 7.0 to 6.0",
 			newTestAlicloudRedisClusterBuilder().WithEngineVersion("7.0"),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisCluster]) {
 				b.(*testAlicloudRedisClusterBuilder).WithEngineVersion("6.0")
 			},
-			"engineVersion cannot be downgraded.",
+			"engineVersion is immutable.",
 		)
 
 		canNotChangeSkr(
-			"AlicloudRedisCluster engineVersion cannot be downgraded from 6.0 to 5.0",
+			"AlicloudRedisCluster engineVersion cannot be changed from 6.0 to 5.0",
 			newTestAlicloudRedisClusterBuilder().WithEngineVersion("6.0"),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisCluster]) {
 				b.(*testAlicloudRedisClusterBuilder).WithEngineVersion("5.0")
 			},
-			"engineVersion cannot be downgraded.",
+			"engineVersion is immutable.",
 		)
 	})
 

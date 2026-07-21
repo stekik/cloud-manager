@@ -38,13 +38,11 @@ type AlicloudRedisInstanceSpec struct {
 	// +kubebuilder:validation:Required
 	RedisTier AlicloudRedisTier `json:"redisTier"`
 
-	// EngineVersion is the Redis engine version. Upgrades are allowed; downgrades are not.
+	// EngineVersion is the Redis engine version. Immutable after creation.
 	// +optional
 	// +kubebuilder:default="5.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
-	// +kubebuilder:validation:XValidation:rule=(self != "5.0" || oldSelf == "5.0"),message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "6.0" || oldSelf == "6.0" || oldSelf == "5.0"),message="engineVersion cannot be downgraded."
-	// +kubebuilder:validation:XValidation:rule=(self != "7.0" || oldSelf == "7.0" || oldSelf == "6.0" || oldSelf == "5.0"),message="engineVersion cannot be downgraded."
+	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
 	EngineVersion string `json:"engineVersion"`
 
 	// Parameters are passed to the AliCloud instance as runtime configuration.
