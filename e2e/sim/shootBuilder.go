@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/3th1nk/cidr"
+	gardeneralicloud "github.com/gardener/gardener-extension-provider-alicloud/pkg/apis/alicloud/v1alpha1"
 	gardeneraws "github.com/gardener/gardener-extension-provider-aws/pkg/apis/aws/v1alpha1"
 	gardenerazure "github.com/gardener/gardener-extension-provider-azure/pkg/apis/azure/v1alpha1"
 	gardenergcp "github.com/gardener/gardener-extension-provider-gcp/pkg/apis/gcp/v1alpha1"
@@ -259,6 +260,40 @@ func (b *ShootBuilder) WithRuntime(rt *infrastructuremanagerv1.Runtime) *ShootBu
 				Kind:       "ControlPlaneConfig",
 			},
 		}
+	case "alicloud":
+		nodesRange := cidr.ParseNoError(rt.Spec.Shoot.Networking.Nodes)
+		zoneRanges, err := nodesRange.SubNetting(cidr.MethodSubnetNum, 16)
+		if err != nil {
+			b.errWithRuntime = append(b.errWithRuntime, fmt.Errorf("failed to subnet nodes CIDR %s: %w", rt.Spec.Shoot.Networking.Nodes, err))
+			return b
+		}
+		var aliZones []gardeneralicloud.Zone
+		for i, zone := range rt.Spec.Shoot.Provider.Workers[0].Zones {
+			aliZones = append(aliZones, gardeneralicloud.Zone{
+				Name:    zone,
+				Workers: zoneRanges[i].CIDR().String(),
+			})
+		}
+
+		ic := &gardeneralicloud.InfrastructureConfig{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: gardeneralicloud.SchemeGroupVersion.String(),
+				Kind:       "InfrastructureConfig",
+			},
+			Networks: gardeneralicloud.Networks{
+				VPC:   gardeneralicloud.VPC{CIDR: new(rt.Spec.Shoot.Networking.Nodes)},
+				Zones: aliZones,
+			},
+		}
+		infrastructureConfig.Object = ic
+
+		controlPlaneConfig.Object = &gardeneralicloud.ControlPlaneConfig{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: gardeneralicloud.SchemeGroupVersion.String(),
+				Kind:       "ControlPlaneConfig",
+			},
+		}
+
 	case "openstack":
 		ic := &gardeneraopenstack.InfrastructureConfig{
 			TypeMeta: metav1.TypeMeta{
