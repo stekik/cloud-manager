@@ -62,6 +62,9 @@ runs:
           - name: gardener-sc-learn
             provider: gcp
             isDefault: true
+          - name: alicloud-skikic
+            provider: alicloud
+            isDefault: true
         networkOwner: gardener
         oidcClientId: $OIDC_CLIENT_ID
         oidcIssuerUrl: $OIDC_ISSUER_URL
@@ -70,6 +73,11 @@ runs:
           - milos.tomic@sap.com
           - dl_623b719a6a0d2d029907bee0@global.corp.sap
         overwriteGardenerCredentials: true
+        cloudProfiles:
+          aws: aws
+          azure: az
+          gcp: gcp
+          alicloud: alicloud
         downloadGardenSecrets:
           cm-e2e-default-aws:
             AWS_ACCESS_KEY_ID: accessKeyID
@@ -90,6 +98,9 @@ runs:
             OS_APPLICATION_CREDENTIAL_ID: applicationCredentialID
             OS_APPLICATION_CREDENTIAL_NAME: applicationCredentialName
             OS_APPLICATION_CREDENTIAL_SECRET: applicationCredentialSecret
+          alicloud-skikic:
+            ALICLOUD_ACCESS_KEY: accessKeyID
+            ALICLOUD_SECRET_KEY: accessKeySecret
         EOF
 
     - name: List directory
@@ -195,6 +206,8 @@ runs:
         FEATURE_FLAG_CONFIG_FILE: ${{ inputs.feature_flag_file }}
         GCP_SA_JSON_KEY_PATH: ./tmp/gcp-default.json
         GCP_VPC_PEERING_KEY_PATH: ./tmp/gcp-peering.json
+        ALICLOUD_ACCESS_KEY: ${{ env.ALICLOUD_ACCESS_KEY }}
+        ALICLOUD_SECRET_KEY: ${{ env.ALICLOUD_SECRET_KEY }}
       run: |
         go run ./cmd > ./tmp/cloud-manager.log 2>&1 &
         CLOUD_MANAGER_PID=$!
