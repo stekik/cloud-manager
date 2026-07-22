@@ -5,7 +5,7 @@ Feature: AlicloudRedisCluster feature
 
     Given there is shared SKR with "AliCloud" provider
 
-    Given eventually timeout is 30m
+    Given eventually timeout is "30m"
 
     And resource declaration:
       | Alias  | Kind                   | ApiVersion                              | Name                         | Namespace |
@@ -18,9 +18,9 @@ Feature: AlicloudRedisCluster feature
       kind: AlicloudRedisCluster
       spec:
         redisTier: C3
-        shardCount: 3
+        shardCount: 4
         replicasPerShard: 1
-        engineVersion: "7.0"
+        engineVersion: "5.0"
         parameters:
           maxmemory-policy: volatile-lru
       """
