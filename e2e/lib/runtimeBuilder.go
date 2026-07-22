@@ -228,8 +228,8 @@ func (b *RuntimeBuilder) WithProvider(provider cloudcontrolv1beta1.ProviderType,
 			},
 			MaxSurge:       new(intstr.FromInt32(3)),
 			MaxUnavailable: new(intstr.FromInt32(0)),
-			Minimum:        3,
-			Maximum:        20,
+			Minimum:        1,
+			Maximum:        3,
 			Volume:         vol,
 			Zones:          zones,
 		},
@@ -428,6 +428,24 @@ var providerRegions = map[cloudcontrolv1beta1.ProviderType]map[string][]string{
 			"eu-de-1d",
 		},
 	},
+
+	cloudcontrolv1beta1.ProviderAlicloud: {
+		"eu-central-1": {
+			"eu-central-1a",
+			"eu-central-1b",
+			"eu-central-1c",
+		},
+		"ap-southeast-1": {
+			"ap-southeast-1a",
+			"ap-southeast-1b",
+			"ap-southeast-1c",
+		},
+		"ap-northeast-1": {
+			"ap-northeast-1a",
+			"ap-northeast-1b",
+			"ap-northeast-1c",
+		},
+	},
 }
 
 var machineTypes = map[cloudcontrolv1beta1.ProviderType][]string{
@@ -435,12 +453,14 @@ var machineTypes = map[cloudcontrolv1beta1.ProviderType][]string{
 	cloudcontrolv1beta1.ProviderGCP:       {"n2-standard-2"},
 	cloudcontrolv1beta1.ProviderAzure:     {"Standard_D2s_v5", "Standard_D4s_v5"},
 	cloudcontrolv1beta1.ProviderOpenStack: {"g_c2_m8"},
+	cloudcontrolv1beta1.ProviderAlicloud:  {"ecs.c9i.large"},
 }
 
 var volumeTypes = map[cloudcontrolv1beta1.ProviderType]string{
-	cloudcontrolv1beta1.ProviderAws:   "gp3",
-	cloudcontrolv1beta1.ProviderGCP:   "pd-balanced",
-	cloudcontrolv1beta1.ProviderAzure: "StandardSSD_LRS",
+	cloudcontrolv1beta1.ProviderAws:      "gp3",
+	cloudcontrolv1beta1.ProviderGCP:      "pd-balanced",
+	cloudcontrolv1beta1.ProviderAzure:    "StandardSSD_LRS",
+	cloudcontrolv1beta1.ProviderAlicloud: "cloud_essd",
 	// nothing for ccee
 	//cloudcontrolv1beta1.ProviderOpenStack: "",
 }
