@@ -65,7 +65,10 @@ spec:
                     properties:
                       engineVersion:
                         default: "5.0"
-                        description: EngineVersion is set at creation and is immutable.
+                        description: |-
+                          EngineVersion is set at creation and is immutable. Defaults to "5.0" for
+                          standard instances (broad class compatibility); cluster instances default
+                          to "7.0" (see RedisClusterAlicloud.EngineVersion).
                         enum:
                         - "5.0"
                         - "6.0"
