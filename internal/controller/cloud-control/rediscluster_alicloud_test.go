@@ -592,4 +592,121 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 				Should(Succeed())
 		})
 	})
+
+	It("Scenario: KCP AliCloud RedisCluster shard count is scaled down", func() {
+
+		alicloudAccount := infra.AlicloudMock().NewAccount()
+		defer alicloudAccount.Delete()
+
+		name := "c1d2e3f4-a5b6-7890-cdef-012345678901"
+		scope := &cloudcontrolv1beta1.Scope{}
+
+		By("Given Scope exists", func() {
+			kcpscope.Ignore.AddName(name)
+			Eventually(CreateScopeAlicloud).
+				WithArguments(infra.Ctx(), infra, scope, alicloudAccount.Credentials().AccessKeyId, WithName(name)).
+				Should(Succeed())
+		})
+
+		kcpIpRangeName := "d2e3f4a5-b6c7-8901-defa-123456789012"
+		kcpIpRange := &cloudcontrolv1beta1.IpRange{}
+		kcpiprange.Ignore.AddName(kcpIpRangeName)
+
+		By("And Given KCP IPRange exists", func() {
+			Eventually(CreateKcpIpRange).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
+					WithName(kcpIpRangeName),
+					WithScope(scope.Name),
+				).Should(Succeed())
+		})
+
+		By("And Given KCP IpRange has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
+					WithKcpIpRangeStatusCidr(kcpIpRange.Spec.Cidr),
+					WithKcpIpRangeStatusVpcId("vpc-alicloud-test-08"),
+					WithKcpIpRangeStatusSubnets(cloudcontrolv1beta1.IpRangeSubnet{
+						Id:   "vsw-alicloud-test-08",
+						Zone: "cn-hangzhou-a",
+					}),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		redisCluster := &cloudcontrolv1beta1.RedisCluster{}
+
+		By("And Given RedisCluster is created with 4 shards", func() {
+			Eventually(CreateRedisCluster).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					WithName(name),
+					WithRemoteRef("skr-alicloud-cluster-scale-down"),
+					WithIpRange(kcpIpRangeName),
+					WithScope(name),
+					WithRedisClusterAlicloud(),
+					WithKcpAlicloudRedisClusterInstanceClass("redis.shard.large.ce"),
+					WithKcpAlicloudRedisEngineVersion("7.0"),
+					WithKcpAlicloudRedisClusterShardCount(4),
+				).Should(Succeed())
+		})
+
+		alicloudMock := alicloudAccount.Region(scope.Spec.Region)
+
+		By("And Given RedisCluster gets its ID", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingFieldSet("status", "id"),
+				).Should(Succeed())
+		})
+
+		By("And Given AliCloud Redis is Normal", func() {
+			alicloudMock.TransitionAllToNormal()
+		})
+
+		By("And Given RedisCluster is Ready", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
+					HavingState("Ready"),
+				).Should(Succeed())
+		})
+
+		By("When shard count is decreased to 2", func() {
+			Eventually(func() error {
+				if err := infra.KCP().Client().Get(infra.Ctx(),
+					client.ObjectKeyFromObject(redisCluster), redisCluster); err != nil {
+					return err
+				}
+				redisCluster.Spec.Instance.Alicloud.ShardCount = 2
+				return infra.KCP().Client().Update(infra.Ctx(), redisCluster)
+			}).Should(Succeed())
+		})
+
+		By("Then AliCloud transitions to Changing and back to Normal with reduced shard count", func() {
+			Eventually(func() error {
+				alicloudMock.TransitionAllToNormal()
+				return LoadAndCheck(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
+					HavingState("Ready"),
+					HavingFieldValue(int32(2), "status", "shardCount"),
+				)
+			}).Should(Succeed(), "expected RedisCluster to reach Ready with shardCount=2")
+		})
+
+		// DELETE
+
+		By("When RedisCluster is deleted", func() {
+			Eventually(Delete).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster).
+				Should(Succeed())
+		})
+
+		By("Then RedisCluster does not exist", func() {
+			Eventually(IsDeleted, 5*time.Second).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster).
+				Should(Succeed())
+		})
+	})
 })

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -48,6 +49,9 @@ func modifyKcpRedisCluster(ctx context.Context, st composed.State) (error, conte
 			Run(ctx, state)
 	}
 
+	if state.KcpRedisCluster.Spec.Instance.Alicloud == nil {
+		state.KcpRedisCluster.Spec.Instance.Alicloud = &cloudcontrolv1beta1.RedisClusterAlicloud{}
+	}
 	state.KcpRedisCluster.Spec.Instance.Alicloud.InstanceClass = instanceClass
 	state.KcpRedisCluster.Spec.Instance.Alicloud.ShardCount = alicloudRedisCluster.Spec.ShardCount
 	state.KcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard = alicloudRedisCluster.Spec.ReplicasPerShard

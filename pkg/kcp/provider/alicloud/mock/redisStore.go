@@ -405,6 +405,12 @@ func (s *redisStore) modifyInstanceConfig(ctx context.Context, instanceId, confi
 func (s *redisStore) modifySecurityIps(_ context.Context, instanceId, securityIps string) error {
 	s.m.Lock()
 	defer s.m.Unlock()
+	if err, ok := s.instanceErrors[instanceId]; ok {
+		return err
+	}
+	if err, ok := s.clusterErrors[instanceId]; ok {
+		return err
+	}
 	if e := s.instances[instanceId]; e != nil {
 		e.SecurityIps = securityIps
 		return nil
@@ -419,6 +425,12 @@ func (s *redisStore) modifySecurityIps(_ context.Context, instanceId, securityIp
 func (s *redisStore) describeSecurityIps(_ context.Context, instanceId string) (string, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
+	if err, ok := s.instanceErrors[instanceId]; ok {
+		return "", err
+	}
+	if err, ok := s.clusterErrors[instanceId]; ok {
+		return "", err
+	}
 	if e := s.instances[instanceId]; e != nil {
 		return e.SecurityIps, nil
 	}
@@ -495,6 +507,12 @@ func (s *redisStore) TransitionAllToNormal() {
 func (s *redisStore) describeInstanceSSL(_ context.Context, instanceId string) (bool, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
+	if err, ok := s.instanceErrors[instanceId]; ok {
+		return false, err
+	}
+	if err, ok := s.clusterErrors[instanceId]; ok {
+		return false, err
+	}
 	if e := s.instances[instanceId]; e != nil {
 		return e.SslEnabled, nil
 	}
@@ -507,6 +525,12 @@ func (s *redisStore) describeInstanceSSL(_ context.Context, instanceId string) (
 func (s *redisStore) modifyInstanceSSL(_ context.Context, instanceId string, enable bool) error {
 	s.m.Lock()
 	defer s.m.Unlock()
+	if err, ok := s.instanceErrors[instanceId]; ok {
+		return err
+	}
+	if err, ok := s.clusterErrors[instanceId]; ok {
+		return err
+	}
 	if e := s.instances[instanceId]; e != nil {
 		e.SslEnabled = enable
 		return nil
