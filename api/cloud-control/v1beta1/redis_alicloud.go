@@ -30,7 +30,9 @@ type RedisInstanceAlicloud struct {
 	// +kubebuilder:validation:Required
 	InstanceClass string `json:"instanceClass"`
 
-	// EngineVersion is set at creation and is immutable.
+	// EngineVersion is set at creation and is immutable. Defaults to "5.0" for
+	// standard instances (broad class compatibility); cluster instances default
+	// to "7.0" (see RedisClusterAlicloud.EngineVersion).
 	// +optional
 	// +kubebuilder:default="5.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
@@ -53,8 +55,9 @@ type RedisInstanceAlicloud struct {
 // cluster instance in the KCP RedisCluster CRD.
 //
 // InstanceClass is the per-shard AliCloud r-kvstore instance class string
-// (e.g. "redis.shard.large.ce"). It is resolved by the SKR reconciler from the
-// SKR-side redisTier abstraction.
+// (e.g. "redis.logic.sharding.4g.3db.0rodb.4proxy.default"). It is resolved
+// by the SKR reconciler from the SKR-side redisTier abstraction using a
+// proxy-based sharding class.
 //
 // AliCloud does not support changing InstanceClass and ShardCount in the same
 // ModifyInstanceSpec call. The KCP cluster pipeline uses two separate modify
@@ -64,7 +67,9 @@ type RedisClusterAlicloud struct {
 	// +kubebuilder:validation:Required
 	InstanceClass string `json:"instanceClass"`
 
-	// EngineVersion is set at creation and is immutable.
+	// EngineVersion is set at creation and is immutable. Defaults to "7.0" for
+	// cluster instances; standard instances default to "5.0" (see
+	// RedisInstanceAlicloud.EngineVersion).
 	// +optional
 	// +kubebuilder:default="7.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"

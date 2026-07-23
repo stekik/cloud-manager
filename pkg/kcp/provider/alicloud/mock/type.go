@@ -28,6 +28,8 @@ type NasConfig interface {
 type RedisInstanceConfig interface {
 	AddRedisInstance(instanceId, instanceClass, engineVersion, status string) *RedisInstanceEntry
 	SetRedisInstanceError(instanceId string, err error)
+	// GetRedisInstance returns the stored entry for instanceId, or nil if not found.
+	GetRedisInstance(instanceId string) *RedisInstanceEntry
 }
 
 // RedisClusterConfig is the test-side seeding API for AliCloud r-kvstore
@@ -36,6 +38,8 @@ type RedisInstanceConfig interface {
 type RedisClusterConfig interface {
 	AddRedisCluster(instanceId, instanceClass, engineVersion, status string, shardCount int32) *RedisClusterEntry
 	SetRedisClusterError(instanceId string, err error)
+	// GetRedisCluster returns the stored entry for instanceId, or nil if not found.
+	GetRedisCluster(instanceId string) *RedisClusterEntry
 }
 
 // Configs aggregates all test-side seeding interfaces.

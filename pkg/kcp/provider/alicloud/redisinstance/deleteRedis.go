@@ -29,6 +29,9 @@ func deleteRedis(ctx context.Context, st composed.State) (error, context.Context
 	}
 
 	if err := state.client.DeleteInstance(ctx, state.instance.InstanceId); err != nil {
+		if alicloudclient.IsPermanentError(err) {
+			return composed.LogErrorAndReturn(err, "Permanent error deleting AliCloud r-kvstore instance", composed.StopAndForget, ctx)
+		}
 		logger.Error(err, "Error deleting AliCloud r-kvstore instance")
 		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	}

@@ -66,6 +66,10 @@ func getAuthSecretBaseData(kcpRedis *cloudcontrolv1beta1.RedisCluster) map[strin
 		result["authString"] = []byte(kcpRedis.Status.AuthString)
 	}
 
+	// CaCert.pem is intentionally absent: AliCloud uses a publicly-trusted CA
+	// so clients can verify the TLS certificate using system roots without a
+	// custom CA bundle (unlike GCP which uses a self-signed CA).
+
 	return result
 }
 
@@ -79,10 +83,10 @@ func parseAuthSecretExtraData(extraDataTemplates map[string]string, authSecretBa
 }
 
 // alicloudRedisClusterTierMemoryGbMap maps each tier to its per-shard memory in GB.
-// Tokyo (ap-northeast-1) only offers proxy-based sharding (redis.logic.sharding.*);
-// the cloud-native *.ce classes are not available there. The instance class is
-// constructed dynamically in redisTierToInstanceClass because the proxy count
-// is encoded in the class name alongside the shard count.
+// All AliCloud international regions use proxy-based sharding
+// (redis.logic.sharding.*). The instance class is constructed dynamically in
+// redisTierToInstanceClass because the proxy count is encoded in the class name
+// alongside the shard count.
 var alicloudRedisClusterTierMemoryGbMap = map[cloudresourcesv1beta1.AlicloudRedisClusterTier]int32{
 	cloudresourcesv1beta1.AlicloudRedisClusterTierC3: 4,
 	cloudresourcesv1beta1.AlicloudRedisClusterTierC4: 8,

@@ -27,6 +27,7 @@ type RedisInstanceEntry struct {
 	ReadOnlyCount    int32
 	Password         string
 	Config           string
+	SecurityIps      string
 	SslEnabled       bool
 }
 
@@ -48,6 +49,7 @@ type RedisClusterEntry struct {
 	ReplicasPerShard int32
 	Password         string
 	Config           string
+	SecurityIps      string
 	SslEnabled       bool
 }
 
@@ -134,6 +136,18 @@ func (s *redisStore) SetRedisClusterError(instanceId string, err error) {
 	} else {
 		s.clusterErrors[instanceId] = err
 	}
+}
+
+func (s *redisStore) GetRedisInstance(instanceId string) *RedisInstanceEntry {
+	s.m.Lock()
+	defer s.m.Unlock()
+	return s.instances[instanceId]
+}
+
+func (s *redisStore) GetRedisCluster(instanceId string) *RedisClusterEntry {
+	s.m.Lock()
+	defer s.m.Unlock()
+	return s.clusters[instanceId]
 }
 
 // === Instance-client ops ====================================================
@@ -388,22 +402,30 @@ func (s *redisStore) modifyInstanceConfig(ctx context.Context, instanceId, confi
 	return fmt.Errorf("instance %s not found", instanceId)
 }
 
-func (s *redisStore) modifySecurityIps(_ context.Context, instanceId, _ string) error {
+func (s *redisStore) modifySecurityIps(_ context.Context, instanceId, securityIps string) error {
 	s.m.Lock()
 	defer s.m.Unlock()
-	if s.instances[instanceId] == nil && s.clusters[instanceId] == nil {
-		return fmt.Errorf("instance %s not found", instanceId)
+	if e := s.instances[instanceId]; e != nil {
+		e.SecurityIps = securityIps
+		return nil
 	}
-	return nil
+	if e := s.clusters[instanceId]; e != nil {
+		e.SecurityIps = securityIps
+		return nil
+	}
+	return fmt.Errorf("instance %s not found", instanceId)
 }
 
 func (s *redisStore) describeSecurityIps(_ context.Context, instanceId string) (string, error) {
 	s.m.Lock()
 	defer s.m.Unlock()
-	if s.instances[instanceId] == nil && s.clusters[instanceId] == nil {
-		return "", fmt.Errorf("instance %s not found", instanceId)
+	if e := s.instances[instanceId]; e != nil {
+		return e.SecurityIps, nil
 	}
-	return "", nil
+	if e := s.clusters[instanceId]; e != nil {
+		return e.SecurityIps, nil
+	}
+	return "", fmt.Errorf("instance %s not found", instanceId)
 }
 
 // === Cluster-client ops (add/delete shards, absolute target) ================
