@@ -19,7 +19,8 @@ func waitRedisAvailable(ctx context.Context, st composed.State) (error, context.
 	switch state.instance.InstanceStatus {
 	case alicloudclient.InstanceStatusNormal:
 		return nil, ctx
-	case alicloudclient.InstanceStatusCreating, alicloudclient.InstanceStatusChanging:
+	case alicloudclient.InstanceStatusCreating, alicloudclient.InstanceStatusChanging,
+		alicloudclient.InstanceStatusSSLModifying:
 		state.instance = nil
 		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	default:

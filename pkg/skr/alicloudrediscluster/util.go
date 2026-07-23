@@ -66,9 +66,9 @@ func getAuthSecretBaseData(kcpRedis *cloudcontrolv1beta1.RedisCluster) map[strin
 		result["authString"] = []byte(kcpRedis.Status.AuthString)
 	}
 
-	// CaCert.pem is intentionally absent: AliCloud uses a publicly-trusted CA
-	// so clients can verify the TLS certificate using system roots without a
-	// custom CA bundle (unlike GCP which uses a self-signed CA).
+	if len(kcpRedis.Status.CaCert) > 0 {
+		result["CaCert.pem"] = []byte(kcpRedis.Status.CaCert)
+	}
 
 	return result
 }

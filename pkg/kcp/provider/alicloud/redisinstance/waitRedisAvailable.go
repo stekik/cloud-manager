@@ -12,8 +12,8 @@ import (
 )
 
 // waitRedisAvailable polls the instance status until it reaches Normal. While
-// Creating or Changing, the reconciler requeues. Any other terminal state
-// surfaces an Error condition on the KCP object.
+// Creating, Changing, or SSLModifying (transient post-create SSL configuration),
+// the reconciler requeues. Any other terminal state surfaces an Error condition.
 func waitRedisAvailable(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
 	if state.instance == nil {
@@ -22,7 +22,8 @@ func waitRedisAvailable(ctx context.Context, st composed.State) (error, context.
 	switch state.instance.InstanceStatus {
 	case alicloudclient.InstanceStatusNormal:
 		return nil, ctx
-	case alicloudclient.InstanceStatusCreating, alicloudclient.InstanceStatusChanging:
+	case alicloudclient.InstanceStatusCreating, alicloudclient.InstanceStatusChanging,
+		alicloudclient.InstanceStatusSSLModifying:
 		state.instance = nil
 		return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 	default:

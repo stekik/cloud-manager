@@ -137,6 +137,9 @@ type RedisClusterStatus struct {
 	// +optional
 	AuthString string `json:"authString,omitempty"`
 
+	// +optional
+	CaCert string `json:"caCert,omitempty"`
+
 	// The reconciled node/machine type of the Redis cluster.
 	// AWS: cache node type (e.g., "cache.t3.micro")
 	// Azure: SKU capacity (e.g., "3")
