@@ -39,6 +39,7 @@ Feature: AlicloudRedisCluster feature
       | Host        | Secret | ${redis.metadata.name} | host       |
       | Port        | Secret | ${redis.metadata.name} | port       |
       | Auth        | Secret | ${redis.metadata.name} | authString |
+      | TLS         | True   |                        |            |
       | ClusterMode | True   |                        |            |
 
     When resource "redis" is deleted

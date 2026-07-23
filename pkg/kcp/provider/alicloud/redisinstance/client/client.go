@@ -124,6 +124,15 @@ type Client interface {
 	ModifySecurityIps(ctx context.Context, instanceId, securityIps string) error
 	DeleteInstance(ctx context.Context, instanceId string) error
 	ResetAccountPassword(ctx context.Context, instanceId, accountName, password string) error
+	// DescribeInstanceSSL returns whether SSL/TLS encryption is enabled on the
+	// instance. The AliCloud API uses string values "Enable"/"Disable" internally;
+	// this method normalises to bool.
+	DescribeInstanceSSL(ctx context.Context, instanceId string) (sslEnabled bool, err error)
+	// ModifyInstanceSSL enables or disables SSL/TLS encryption on the instance.
+	// The underlying AliCloud ModifyInstanceSSL call starts an async operation;
+	// the caller should wait for the instance to return to Normal status before
+	// reading connection details.
+	ModifyInstanceSSL(ctx context.Context, instanceId string, enable bool) error
 }
 
 // IsPermanentError returns true for AliCloud SDK errors that will never
@@ -438,4 +447,33 @@ func (c *alicloudRedisClient) DescribeSecurityIps(ctx context.Context, instanceI
 		}
 	}
 	return "", nil
+}
+
+func (c *alicloudRedisClient) DescribeInstanceSSL(ctx context.Context, instanceId string) (bool, error) {
+	req := &rkvstore.DescribeInstanceSSLRequest{
+		InstanceId: new(instanceId),
+	}
+	resp, err := c.c.DescribeInstanceSSL(req)
+	if err != nil {
+		return false, fmt.Errorf("error describing alicloud r-kvstore instance %s SSL: %w", instanceId, err)
+	}
+	if resp == nil || resp.Body == nil {
+		return false, nil
+	}
+	return tea.StringValue(resp.Body.SSLEnabled) == "Enable", nil
+}
+
+func (c *alicloudRedisClient) ModifyInstanceSSL(ctx context.Context, instanceId string, enable bool) error {
+	sslEnabled := "Disable"
+	if enable {
+		sslEnabled = "Enable"
+	}
+	req := &rkvstore.ModifyInstanceSSLRequest{
+		InstanceId: new(instanceId),
+		SSLEnabled: new(sslEnabled),
+	}
+	if _, err := c.c.ModifyInstanceSSL(req); err != nil {
+		return fmt.Errorf("error modifying alicloud r-kvstore instance %s SSL: %w", instanceId, err)
+	}
+	return nil
 }

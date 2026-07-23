@@ -37,6 +37,7 @@ Feature: AlicloudRedisInstance feature
       | Host | Secret | ${redis.metadata.name} | host       |
       | Port | Secret | ${redis.metadata.name} | port       |
       | Auth | Secret | ${redis.metadata.name} | authString |
+      | TLS  | True   |                        |            |
 
     When resource "redis" is deleted
 
