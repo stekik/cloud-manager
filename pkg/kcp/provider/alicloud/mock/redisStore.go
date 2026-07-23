@@ -27,6 +27,7 @@ type RedisInstanceEntry struct {
 	ReadOnlyCount    int32
 	Password         string
 	Config           string
+	SslEnabled       bool
 }
 
 // RedisClusterEntry is the stored representation of a sharded AliCloud
@@ -47,6 +48,7 @@ type RedisClusterEntry struct {
 	ReplicasPerShard int32
 	Password         string
 	Config           string
+	SslEnabled       bool
 }
 
 // redisStore is the shared in-memory backing store for the r-kvstore mock. It
@@ -466,6 +468,32 @@ func (s *redisStore) TransitionAllToNormal() {
 			e.InstanceStatus = redisinstance.InstanceStatusNormal
 		}
 	}
+}
+
+func (s *redisStore) describeInstanceSSL(_ context.Context, instanceId string) (bool, error) {
+	s.m.Lock()
+	defer s.m.Unlock()
+	if e := s.instances[instanceId]; e != nil {
+		return e.SslEnabled, nil
+	}
+	if e := s.clusters[instanceId]; e != nil {
+		return e.SslEnabled, nil
+	}
+	return false, fmt.Errorf("instance %s not found", instanceId)
+}
+
+func (s *redisStore) modifyInstanceSSL(_ context.Context, instanceId string, enable bool) error {
+	s.m.Lock()
+	defer s.m.Unlock()
+	if e := s.instances[instanceId]; e != nil {
+		e.SslEnabled = enable
+		return nil
+	}
+	if e := s.clusters[instanceId]; e != nil {
+		e.SslEnabled = enable
+		return nil
+	}
+	return fmt.Errorf("instance %s not found", instanceId)
 }
 
 // The client interfaces are satisfied by the redisInstanceClientView and

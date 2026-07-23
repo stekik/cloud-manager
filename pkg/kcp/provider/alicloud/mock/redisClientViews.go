@@ -48,6 +48,14 @@ func (c *redisInstanceClientView) ResetAccountPassword(ctx context.Context, inst
 	return c.resetAccountPassword(ctx, instanceId, accountName, password)
 }
 
+func (c *redisInstanceClientView) DescribeInstanceSSL(ctx context.Context, instanceId string) (bool, error) {
+	return c.describeInstanceSSL(ctx, instanceId)
+}
+
+func (c *redisInstanceClientView) ModifyInstanceSSL(ctx context.Context, instanceId string, enable bool) error {
+	return c.modifyInstanceSSL(ctx, instanceId, enable)
+}
+
 // redisClusterClientView adapts redisStore to rediscluster.Client.
 type redisClusterClientView struct{ *redisStore }
 
@@ -87,6 +95,14 @@ func (c *redisClusterClientView) DeleteInstance(ctx context.Context, instanceId 
 
 func (c *redisClusterClientView) ResetAccountPassword(ctx context.Context, instanceId, accountName, password string) error {
 	return c.resetAccountPassword(ctx, instanceId, accountName, password)
+}
+
+func (c *redisClusterClientView) DescribeInstanceSSL(ctx context.Context, instanceId string) (bool, error) {
+	return c.describeInstanceSSL(ctx, instanceId)
+}
+
+func (c *redisClusterClientView) ModifyInstanceSSL(ctx context.Context, instanceId string, enable bool) error {
+	return c.modifyInstanceSSL(ctx, instanceId, enable)
 }
 
 func (c *redisClusterClientView) AddShardingNode(ctx context.Context, instanceId string, targetShardCount int32) error {
