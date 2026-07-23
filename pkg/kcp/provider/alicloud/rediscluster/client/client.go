@@ -42,17 +42,11 @@ type Client interface {
 type ClientProvider func(ctx context.Context, region, accessKeyId, accessKeySecret string) (Client, error)
 
 // NewClientProvider returns a ClientProvider backed by the real AliCloud
-// r-kvstore SDK. It re-uses the shared instance-client construction so the
-// cluster client automatically inherits every standard-instance operation
-// with identical semantics.
+// r-kvstore SDK. A single *rkvstore.Client is constructed and shared between
+// the embedded instance operations and the cluster-only sharding operations,
+// so exactly one SDK connection is opened per reconcile.
 func NewClientProvider() ClientProvider {
-	instanceProvider := instanceclient.NewClientProvider()
 	return func(ctx context.Context, region, accessKeyId, accessKeySecret string) (Client, error) {
-		instClient, err := instanceProvider(ctx, region, accessKeyId, accessKeySecret)
-		if err != nil {
-			return nil, err
-		}
-
 		config := &openapi.Config{
 			AccessKeyId:     new(accessKeyId),
 			AccessKeySecret: new(accessKeySecret),
@@ -66,7 +60,7 @@ func NewClientProvider() ClientProvider {
 		}
 
 		return &alicloudRedisClusterClient{
-			Client: instClient,
+			Client: instanceclient.NewClientFromSDK(rc, region),
 			c:      rc,
 			region: region,
 		}, nil

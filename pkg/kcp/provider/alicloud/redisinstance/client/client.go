@@ -233,6 +233,13 @@ func NewClientProvider() ClientProvider {
 	}
 }
 
+// NewClientFromSDK wraps an already-constructed *rkvstore.Client. Used by the
+// cluster client package to share a single SDK connection for both standard
+// instance and cluster-only operations.
+func NewClientFromSDK(rc *rkvstore.Client, region string) Client {
+	return &alicloudRedisClient{c: rc, region: region}
+}
+
 type alicloudRedisClient struct {
 	c      *rkvstore.Client
 	region string

@@ -98,6 +98,12 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 				).Should(Succeed(), "expected RedisCluster to reach Ready state")
 		})
 
+		By("And Then SSL is enabled on the AliCloud cluster", func() {
+			entry := alicloudMock.GetRedisCluster(redisCluster.Status.Id)
+			Expect(entry).NotTo(BeNil(), "expected mock entry to exist")
+			Expect(entry.SslEnabled).To(BeTrue(), "expected SSL to be enabled")
+		})
+
 		// DELETE
 
 		By("When RedisCluster is deleted", func() {
