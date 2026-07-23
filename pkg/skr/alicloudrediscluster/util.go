@@ -92,6 +92,7 @@ var alicloudRedisClusterTierMemoryGbMap = map[cloudresourcesv1beta1.AlicloudRedi
 	cloudresourcesv1beta1.AlicloudRedisClusterTierC4: 8,
 	cloudresourcesv1beta1.AlicloudRedisClusterTierC5: 16,
 	cloudresourcesv1beta1.AlicloudRedisClusterTierC6: 32,
+	cloudresourcesv1beta1.AlicloudRedisClusterTierC7: 64,
 }
 
 func redisTierToInstanceClass(tier cloudresourcesv1beta1.AlicloudRedisClusterTier, shardCount int32) (string, error) {

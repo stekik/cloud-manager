@@ -9,6 +9,7 @@ package v1beta1
 //	C4 →  8 GB per shard  (redis.logic.sharding.8g.{N}db.0rodb.{P}proxy.default)
 //	C5 → 16 GB per shard  (redis.logic.sharding.16g.{N}db.0rodb.{P}proxy.default)
 //	C6 → 32 GB per shard  (redis.logic.sharding.32g.{N}db.0rodb.{P}proxy.default)
+//	C7 → 64 GB per shard  (redis.logic.sharding.64g.{N}db.0rodb.{P}proxy.default)
 //
 // where N = shardCount and P = max(4, shardCount).
 //
@@ -18,7 +19,7 @@ package v1beta1
 // size, matching the Azure Managed Redis convention where C tiers start above
 // the smallest shard size.
 //
-// +kubebuilder:validation:Enum=C3;C4;C5;C6
+// +kubebuilder:validation:Enum=C3;C4;C5;C6;C7
 type AlicloudRedisClusterTier string
 
 const (
@@ -26,4 +27,5 @@ const (
 	AlicloudRedisClusterTierC4 AlicloudRedisClusterTier = "C4"
 	AlicloudRedisClusterTierC5 AlicloudRedisClusterTier = "C5"
 	AlicloudRedisClusterTierC6 AlicloudRedisClusterTier = "C6"
+	AlicloudRedisClusterTierC7 AlicloudRedisClusterTier = "C7"
 )
