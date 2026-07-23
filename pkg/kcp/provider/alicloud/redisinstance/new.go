@@ -45,6 +45,7 @@ func New(stateFactory StateFactory) composed.Action {
 					enableSsl,
 					addUpdatingCondition,
 					modifyInstanceClass,
+					waitRedisAvailable,
 					modifyParameters,
 					updateStatus,
 				),

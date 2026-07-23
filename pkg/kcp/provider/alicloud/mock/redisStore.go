@@ -374,6 +374,12 @@ func (s *redisStore) resetAccountPassword(ctx context.Context, instanceId, accou
 	}
 	s.m.Lock()
 	defer s.m.Unlock()
+	if err, ok := s.instanceErrors[instanceId]; ok {
+		return err
+	}
+	if err, ok := s.clusterErrors[instanceId]; ok {
+		return err
+	}
 	if e := s.instances[instanceId]; e != nil {
 		e.Password = password
 		return nil
@@ -391,6 +397,12 @@ func (s *redisStore) modifyInstanceConfig(ctx context.Context, instanceId, confi
 	}
 	s.m.Lock()
 	defer s.m.Unlock()
+	if err, ok := s.instanceErrors[instanceId]; ok {
+		return err
+	}
+	if err, ok := s.clusterErrors[instanceId]; ok {
+		return err
+	}
 	if e := s.instances[instanceId]; e != nil {
 		e.Config = config
 		return nil
