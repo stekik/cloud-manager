@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloud "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 )
 
@@ -37,13 +38,7 @@ func setSecurityIps(ctx context.Context, st composed.State) (error, context.Cont
 		ipRangeCidr = state.IpRange().Spec.Cidr
 	}
 
-	var required []string
-	if nodesCidr != "" {
-		required = append(required, nodesCidr)
-	}
-	if ipRangeCidr != "" && ipRangeCidr != nodesCidr {
-		required = append(required, ipRangeCidr)
-	}
+	required := alicloud.BuildRequiredCidrs(nodesCidr, ipRangeCidr)
 	if len(required) == 0 {
 		return nil, ctx
 	}
@@ -55,18 +50,7 @@ func setSecurityIps(ctx context.Context, st composed.State) (error, context.Cont
 			composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 	}
 
-	existingSet := make(map[string]struct{})
-	for _, ip := range strings.Split(existing, ",") {
-		existingSet[strings.TrimSpace(ip)] = struct{}{}
-	}
-	allPresent := true
-	for _, cidr := range required {
-		if _, ok := existingSet[cidr]; !ok {
-			allPresent = false
-			break
-		}
-	}
-	if allPresent {
+	if alicloud.HasAllCidrs(existing, required) {
 		return nil, ctx
 	}
 

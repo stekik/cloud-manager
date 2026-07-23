@@ -2,7 +2,6 @@ package alicloudrediscluster
 
 import (
 	"context"
-	"errors"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
@@ -25,7 +24,7 @@ func createKcpRedisCluster(ctx context.Context, st composed.State) (error, conte
 	instanceClass, err := redisTierToInstanceClass(alicloudRedisCluster.Spec.RedisTier, alicloudRedisCluster.Spec.ShardCount)
 	if err != nil {
 		errMsg := "failed to map redisTier to instanceClass"
-		logger.Error(errors.New(errMsg), errMsg, "redisTier", alicloudRedisCluster.Spec.RedisTier)
+		logger.Error(err, errMsg, "redisTier", alicloudRedisCluster.Spec.RedisTier)
 		alicloudRedisCluster.Status.State = cloudresourcesv1beta1.StateError
 		return composed.UpdateStatus(alicloudRedisCluster).
 			SetCondition(metav1.Condition{
