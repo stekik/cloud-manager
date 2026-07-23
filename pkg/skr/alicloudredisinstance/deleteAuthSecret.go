@@ -22,7 +22,7 @@ func deleteAuthSecret(ctx context.Context, st composed.State) (error, context.Co
 		return nil, ctx
 	}
 
-	err, _ := composed.UpdateStatus(state.ObjAsAlicloudRedisInstance()).
+	err, ctx := composed.UpdateStatus(state.ObjAsAlicloudRedisInstance()).
 		SetExclusiveConditions(metav1.Condition{
 			Type:    cloudresourcesv1beta1.ConditionTypeDeleting,
 			Status:  metav1.ConditionTrue,
