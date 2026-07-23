@@ -355,4 +355,127 @@ var _ = Describe("Feature: KCP AliCloud RedisCluster", func() {
 				Should(Succeed())
 		})
 	})
+
+	It("Scenario: KCP AliCloud RedisCluster SSL is re-enabled after spec change resets it", func() {
+
+		alicloudAccount := infra.AlicloudMock().NewAccount()
+		defer alicloudAccount.Delete()
+
+		name := "d1e2f3a4-b5c6-7890-defa-890123456789"
+		scope := &cloudcontrolv1beta1.Scope{}
+
+		By("Given Scope exists", func() {
+			kcpscope.Ignore.AddName(name)
+			Eventually(CreateScopeAlicloud).
+				WithArguments(infra.Ctx(), infra, scope, alicloudAccount.Credentials().AccessKeyId, WithName(name)).
+				Should(Succeed())
+		})
+
+		kcpIpRangeName := "e2f3a4b5-c6d7-8901-efab-901234567890"
+		kcpIpRange := &cloudcontrolv1beta1.IpRange{}
+		kcpiprange.Ignore.AddName(kcpIpRangeName)
+
+		By("And Given KCP IPRange exists", func() {
+			Eventually(CreateKcpIpRange).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
+					WithName(kcpIpRangeName),
+					WithScope(scope.Name),
+				).Should(Succeed())
+		})
+
+		By("And Given KCP IpRange has Ready condition", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpIpRange,
+					WithKcpIpRangeStatusCidr(kcpIpRange.Spec.Cidr),
+					WithKcpIpRangeStatusVpcId("vpc-alicloud-test-06"),
+					WithKcpIpRangeStatusSubnets(cloudcontrolv1beta1.IpRangeSubnet{
+						Id:   "vsw-alicloud-test-06",
+						Zone: "cn-hangzhou-a",
+					}),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		redisCluster := &cloudcontrolv1beta1.RedisCluster{}
+
+		By("And Given RedisCluster is created", func() {
+			Eventually(CreateRedisCluster).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					WithName(name),
+					WithRemoteRef("skr-alicloud-cluster-ssl-restore"),
+					WithIpRange(kcpIpRangeName),
+					WithScope(name),
+					WithRedisClusterAlicloud(),
+					WithKcpAlicloudRedisClusterInstanceClass("redis.shard.large.ce"),
+					WithKcpAlicloudRedisEngineVersion("7.0"),
+					WithKcpAlicloudRedisClusterShardCount(2),
+				).Should(Succeed())
+		})
+
+		alicloudMock := alicloudAccount.Region(scope.Spec.Region)
+
+		By("And Given RedisCluster is Ready with SSL enabled", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingFieldSet("status", "id"),
+				).Should(Succeed())
+			alicloudMock.TransitionAllToNormal()
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
+					HavingState("Ready"),
+				).Should(Succeed())
+			entry := alicloudMock.GetRedisCluster(redisCluster.Status.Id)
+			Expect(entry).NotTo(BeNil())
+			Expect(entry.SslEnabled).To(BeTrue(), "SSL should be enabled after initial provisioning")
+		})
+
+		By("When AliCloud resets SSL during a spec change (simulated)", func() {
+			entry := alicloudMock.GetRedisCluster(redisCluster.Status.Id)
+			Expect(entry).NotTo(BeNil())
+			entry.SslEnabled = false
+		})
+
+		By("When a spec change triggers reconcile", func() {
+			Eventually(func() error {
+				if err := infra.KCP().Client().Get(infra.Ctx(),
+					client.ObjectKeyFromObject(redisCluster), redisCluster); err != nil {
+					return err
+				}
+				redisCluster.Spec.Instance.Alicloud.ShardCount = 3
+				return infra.KCP().Client().Update(infra.Ctx(), redisCluster)
+			}).Should(Succeed())
+		})
+
+		By("Then SSL is re-enabled and RedisCluster returns to Ready", func() {
+			Eventually(func() error {
+				alicloudMock.TransitionAllToNormal()
+				return LoadAndCheck(infra.Ctx(), infra.KCP().Client(), redisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudcontrolv1beta1.ConditionTypeReady),
+					HavingState("Ready"),
+					HavingFieldValue(int32(3), "status", "shardCount"),
+				)
+			}).Should(Succeed(), "expected RedisCluster to reach Ready with shardCount=3")
+			entry := alicloudMock.GetRedisCluster(redisCluster.Status.Id)
+			Expect(entry).NotTo(BeNil())
+			Expect(entry.SslEnabled).To(BeTrue(), "SSL should be re-enabled after reconcile")
+		})
+
+		// DELETE
+
+		By("When RedisCluster is deleted", func() {
+			Eventually(Delete).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster).
+				Should(Succeed())
+		})
+
+		By("Then RedisCluster does not exist", func() {
+			Eventually(IsDeleted, 5*time.Second).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), redisCluster).
+				Should(Succeed())
+		})
+	})
 })
