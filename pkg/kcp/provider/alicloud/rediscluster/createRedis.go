@@ -121,7 +121,9 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 		if alicloudclient.IsPermanentError(err) {
 			if alicloudclient.IsPasswordErr(err) {
 				kcp.Status.AuthString = ""
-				_ = state.UpdateObjStatus(ctx)
+				if updErr := state.UpdateObjStatus(ctx); updErr != nil {
+					logger.Error(updErr, "Error clearing invalid password from status")
+				}
 			}
 			return composed.StopAndForget, ctx
 		}

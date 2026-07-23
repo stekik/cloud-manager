@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/util"
@@ -48,6 +49,9 @@ func modifyKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 			Run(ctx, state)
 	}
 
+	if state.KcpRedisInstance.Spec.Instance.Alicloud == nil {
+		state.KcpRedisInstance.Spec.Instance.Alicloud = &cloudcontrolv1beta1.RedisInstanceAlicloud{}
+	}
 	state.KcpRedisInstance.Spec.Instance.Alicloud.InstanceClass = instanceClass
 	state.KcpRedisInstance.Spec.Instance.Alicloud.ReadOnlyCount = readOnlyCount
 	state.KcpRedisInstance.Spec.Instance.Alicloud.Parameters = alicloudRedisInstance.Spec.Parameters

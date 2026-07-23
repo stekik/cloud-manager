@@ -46,7 +46,7 @@ func loadAuthSecret(ctx context.Context, st composed.State) (error, context.Cont
 			}).
 			RemoveConditions(cloudresourcesv1beta1.ConditionTypeReady).
 			ErrorLogMessage(errMsg).
-			SuccessLogMsg("Updated and forgot SKR AlicloudRedisInstance status with Error condition").
+			SuccessLogMsg("Updated SKR AlicloudRedisInstance status with Error condition, requeuing").
 			SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).
 			Run(ctx, state)
 	}
