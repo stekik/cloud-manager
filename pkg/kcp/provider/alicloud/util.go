@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"strings"
 )
 
 // GeneratePassword returns a 32-char password satisfying AliCloud r-kvstore
@@ -38,4 +39,31 @@ func GeneratePassword() string {
 		b[i], b[j] = b[j], b[i]
 	}
 	return string(b)
+}
+
+// BuildRequiredCidrs returns the unique list of CIDRs that must be present in the security-IP list.
+func BuildRequiredCidrs(nodesCidr, ipRangeCidr string) []string {
+	required := []string{}
+	if nodesCidr != "" {
+		required = append(required, nodesCidr)
+	}
+	if ipRangeCidr != "" && ipRangeCidr != nodesCidr {
+		required = append(required, ipRangeCidr)
+	}
+	return required
+}
+
+// HasAllCidrs reports whether all required CIDRs appear in the comma-separated existing string.
+func HasAllCidrs(existing string, required []string) bool {
+	parts := strings.Split(existing, ",")
+	existingSet := make(map[string]struct{}, len(parts))
+	for _, p := range parts {
+		existingSet[strings.TrimSpace(p)] = struct{}{}
+	}
+	for _, r := range required {
+		if _, ok := existingSet[r]; !ok {
+			return false
+		}
+	}
+	return true
 }

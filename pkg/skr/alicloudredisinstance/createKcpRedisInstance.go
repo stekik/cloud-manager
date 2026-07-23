@@ -2,7 +2,6 @@ package alicloudredisinstance
 
 import (
 	"context"
-	"errors"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	cloudresourcesv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-resources/v1beta1"
@@ -25,7 +24,7 @@ func createKcpRedisInstance(ctx context.Context, st composed.State) (error, cont
 	instanceClass, readOnlyCount, err := redisTierToInstanceClassAndReadOnlyCount(alicloudRedisInstance.Spec.RedisTier)
 	if err != nil {
 		errMsg := "failed to map redisTier to instanceClass"
-		logger.Error(errors.New(errMsg), errMsg, "redisTier", alicloudRedisInstance.Spec.RedisTier)
+		logger.Error(err, errMsg, "redisTier", alicloudRedisInstance.Spec.RedisTier)
 		alicloudRedisInstance.Status.State = cloudresourcesv1beta1.StateError
 		return composed.UpdateStatus(alicloudRedisInstance).
 			SetCondition(metav1.Condition{

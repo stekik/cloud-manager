@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloud "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 )
 
@@ -37,7 +38,7 @@ func setSecurityIps(ctx context.Context, st composed.State) (error, context.Cont
 		ipRangeCidr = state.IpRange().Spec.Cidr
 	}
 
-	required := buildRequiredCidrs(nodesCidr, ipRangeCidr)
+	required := alicloud.BuildRequiredCidrs(nodesCidr, ipRangeCidr)
 	if len(required) == 0 {
 		return nil, ctx
 	}
@@ -49,7 +50,7 @@ func setSecurityIps(ctx context.Context, st composed.State) (error, context.Cont
 			composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
 	}
 
-	if hasAllCidrs(existing, required) {
+	if alicloud.HasAllCidrs(existing, required) {
 		return nil, ctx
 	}
 
@@ -60,30 +61,4 @@ func setSecurityIps(ctx context.Context, st composed.State) (error, context.Cont
 	}
 
 	return nil, ctx
-}
-
-func buildRequiredCidrs(nodesCidr, ipRangeCidr string) []string {
-	var cidrs []string
-	if nodesCidr != "" {
-		cidrs = append(cidrs, nodesCidr)
-	}
-	if ipRangeCidr != "" && ipRangeCidr != nodesCidr {
-		cidrs = append(cidrs, ipRangeCidr)
-	}
-	return cidrs
-}
-
-// hasAllCidrs returns true when every required CIDR is already in the
-// comma-separated existing list returned by DescribeSecurityIps.
-func hasAllCidrs(existing string, required []string) bool {
-	existingSet := make(map[string]struct{})
-	for _, ip := range strings.Split(existing, ",") {
-		existingSet[strings.TrimSpace(ip)] = struct{}{}
-	}
-	for _, cidr := range required {
-		if _, ok := existingSet[cidr]; !ok {
-			return false
-		}
-	}
-	return true
 }
