@@ -28,11 +28,12 @@ import (
 // Instance status values used by the AliCloud r-kvstore API. Only a subset is
 // consumed by the reconcilers; the constants are documented in issue #2012.
 const (
-	InstanceStatusCreating = "Creating"
-	InstanceStatusNormal   = "Normal"
-	InstanceStatusChanging = "Changing"
-	InstanceStatusInactive = "Inactive"
-	InstanceStatusReleased = "Released"
+	InstanceStatusCreating     = "Creating"
+	InstanceStatusNormal       = "Normal"
+	InstanceStatusChanging     = "Changing"
+	InstanceStatusSSLModifying = "SSLModifying"
+	InstanceStatusInactive     = "Inactive"
+	InstanceStatusReleased     = "Released"
 )
 
 // NetworkType is always VPC for cloud-manager (public endpoints are not

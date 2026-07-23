@@ -6,6 +6,7 @@ import (
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
+	alicloud "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud"
 	"github.com/kyma-project/cloud-manager/pkg/util"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,6 +48,17 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 			fmt.Errorf("AuthString is empty; password was never persisted or was lost"),
 			"AliCloud r-kvstore instance has no AuthString",
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+	}
+
+	if kcp.Status.CaCert == "" {
+		cert, err := alicloud.FetchApsaraDBCACert(ctx)
+		if err != nil {
+			return composed.LogErrorAndReturn(err,
+				"Error fetching ApsaraDB CA cert for AliCloud r-kvstore instance",
+				composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+		}
+		kcp.Status.CaCert = cert
+		changed = true
 	}
 
 	hasReady := meta.FindStatusCondition(kcp.Status.Conditions, cloudcontrolv1beta1.ConditionTypeReady) != nil
