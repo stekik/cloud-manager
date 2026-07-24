@@ -70,8 +70,14 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	var lastErr error
 	allZonesFailed := true
 	for _, vSwitchId := range vSwitchIds {
-		// "v3" suffix rotates tokens away from v2 tokens that omitted ReadOnlyCount.
-		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId + "v3"
+		// "v4" suffix rotates tokens away from v3 tokens that omitted ShardCount
+		// and ReplicasPerShard. Different shard/replica configs must not share a token.
+		tokenInput := fmt.Sprintf("%s%s%s%s%d%dv4",
+			string(kcp.UID), password,
+			kcp.Spec.Instance.Alicloud.InstanceClass, vSwitchId,
+			kcp.Spec.Instance.Alicloud.ShardCount,
+			kcp.Spec.Instance.Alicloud.ReplicasPerShard,
+		)
 		tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(tokenInput)))[:32]
 
 		opts := alicloudclient.CreateInstanceOptions{

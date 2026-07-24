@@ -53,7 +53,7 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 			composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
 	}
 
-	// Generate password before CreateInstance 0 - AliCloud never returns it after.
+	// Generate password before CreateInstance - AliCloud never returns it after.
 	// Persist it before calling CreateInstance so a crash after the API call but
 	// before status write does not lose the password on the next retry (the
 	// idempotency Token returns the same instance; we must not regenerate).

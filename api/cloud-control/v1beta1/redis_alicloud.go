@@ -23,9 +23,11 @@ package v1beta1
 // (e.g. "tair.rdb.4g"). It is resolved by the SKR reconciler from the
 // SKR-side redisTier abstraction.
 //
-// ReadOnlyCount encodes the service tier: 0 = S tier (no read-only replica),
-// 1 = P tier (one read-only replica). Both InstanceClass and ReadOnlyCount are
-// mutable via ModifyInstanceSpec, so no CEL immutability rules are attached.
+// ReadOnlyCount encodes the service tier for classes that support it:
+// 0 = S tier (no read-only replica), 1 = P tier (one read-only replica).
+// Note: some class families (tair.rdb.*, redis.amber.master.*) silently
+// ignore ReadOnlyCount; the instance reconciler skips drift checks for these.
+// Both InstanceClass and ReadOnlyCount are mutable via ModifyInstanceSpec.
 type RedisInstanceAlicloud struct {
 	// +kubebuilder:validation:Required
 	InstanceClass string `json:"instanceClass"`

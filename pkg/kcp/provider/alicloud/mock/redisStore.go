@@ -29,6 +29,9 @@ type RedisInstanceEntry struct {
 	Config           string
 	SecurityIps      string
 	SslEnabled       bool
+	// PendingSslEnabled holds the SSL value being applied asynchronously while
+	// InstanceStatus is SSLModifying. TransitionAllToNormal applies it.
+	PendingSslEnabled *bool
 }
 
 // RedisClusterEntry is the stored representation of a sharded AliCloud
@@ -51,6 +54,9 @@ type RedisClusterEntry struct {
 	Config           string
 	SecurityIps      string
 	SslEnabled       bool
+	// PendingSslEnabled holds the SSL value being applied asynchronously while
+	// InstanceStatus is SSLModifying. TransitionAllToNormal applies it.
+	PendingSslEnabled *bool
 }
 
 // redisStore is the shared in-memory backing store for the r-kvstore mock. It
@@ -499,19 +505,34 @@ func (s *redisStore) deleteShardingNode(ctx context.Context, instanceId string, 
 	return nil
 }
 
-// TransitionAllToNormal advances every Creating/Changing entry to Normal.
+// TransitionAllToNormal advances every Creating/Changing/SSLModifying entry to
+// Normal. For SSLModifying entries the pending SSL value is also applied.
 // Test helper used to simulate the AliCloud API completing an operation.
 func (s *redisStore) TransitionAllToNormal() {
 	s.m.Lock()
 	defer s.m.Unlock()
 	for _, e := range s.instances {
-		if e.InstanceStatus == redisinstance.InstanceStatusCreating || e.InstanceStatus == redisinstance.InstanceStatusChanging {
+		switch e.InstanceStatus {
+		case redisinstance.InstanceStatusCreating, redisinstance.InstanceStatusChanging:
 			e.InstanceStatus = redisinstance.InstanceStatusNormal
+		case redisinstance.InstanceStatusSSLModifying:
+			e.InstanceStatus = redisinstance.InstanceStatusNormal
+			if e.PendingSslEnabled != nil {
+				e.SslEnabled = *e.PendingSslEnabled
+				e.PendingSslEnabled = nil
+			}
 		}
 	}
 	for _, e := range s.clusters {
-		if e.InstanceStatus == redisinstance.InstanceStatusCreating || e.InstanceStatus == redisinstance.InstanceStatusChanging {
+		switch e.InstanceStatus {
+		case redisinstance.InstanceStatusCreating, redisinstance.InstanceStatusChanging:
 			e.InstanceStatus = redisinstance.InstanceStatusNormal
+		case redisinstance.InstanceStatusSSLModifying:
+			e.InstanceStatus = redisinstance.InstanceStatusNormal
+			if e.PendingSslEnabled != nil {
+				e.SslEnabled = *e.PendingSslEnabled
+				e.PendingSslEnabled = nil
+			}
 		}
 	}
 }
@@ -544,11 +565,13 @@ func (s *redisStore) modifyInstanceSSL(_ context.Context, instanceId string, ena
 		return err
 	}
 	if e := s.instances[instanceId]; e != nil {
-		e.SslEnabled = enable
+		e.PendingSslEnabled = &enable
+		e.InstanceStatus = redisinstance.InstanceStatusSSLModifying
 		return nil
 	}
 	if e := s.clusters[instanceId]; e != nil {
-		e.SslEnabled = enable
+		e.PendingSslEnabled = &enable
+		e.InstanceStatus = redisinstance.InstanceStatusSSLModifying
 		return nil
 	}
 	return fmt.Errorf("instance %s not found", instanceId)
