@@ -90,6 +90,8 @@ func (s *State) ShouldModifyKcp() bool {
 
 	instanceClass, readOnlyCount, err := redisTierToInstanceClassAndReadOnlyCount(alicloudRedisInstance.Spec.RedisTier)
 	if err != nil {
+		// Unknown tier — trigger a KCP modify so the reconciler surfaces the error
+		// rather than silently skipping the drift check.
 		return true
 	}
 

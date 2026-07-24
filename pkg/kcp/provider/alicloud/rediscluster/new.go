@@ -43,9 +43,6 @@ func New(stateFactory StateFactory) composed.Action {
 					waitRedisAvailable,
 					setSecurityIps,
 					enableSsl,
-					// SSL is not re-checked after the modifyInstanceClass / modifyShardCount
-					// steps below. AliCloud may internally disable SSL during a spec change;
-					// if that happens the next reconcile re-enables it (eventual consistency).
 					addUpdatingCondition,
 					modifyInstanceClass,
 					waitRedisAvailable,
@@ -54,6 +51,10 @@ func New(stateFactory StateFactory) composed.Action {
 					waitRedisAvailable,
 					addUpdatingCondition,
 					modifyParameters,
+					// Re-check SSL after modify steps: AliCloud may disable SSL during a
+					// class or shard-count change; restoring it here avoids waiting for
+					// the next reconcile cycle.
+					enableSsl,
 					updateStatus,
 				),
 			),

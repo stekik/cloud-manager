@@ -31,7 +31,9 @@ func updateStatus(ctx context.Context, st composed.State) (error, context.Contex
 		kcp.Status.NodeType = state.instance.InstanceClass
 		changed = true
 	}
-	memGB := int32(state.instance.Capacity / 1024) // AliCloud Capacity is in MB
+	// AliCloud Capacity is in MB; all supported instance classes are ≥1 GB so
+	// integer division is exact.
+	memGB := int32(state.instance.Capacity / 1024)
 	if memGB != kcp.Status.MemorySizeGb {
 		kcp.Status.MemorySizeGb = memGB
 		changed = true
