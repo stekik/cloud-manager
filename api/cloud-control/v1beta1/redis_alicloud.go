@@ -57,7 +57,7 @@ type RedisInstanceAlicloud struct {
 // InstanceClass is the per-shard AliCloud r-kvstore instance class string
 // (e.g. "redis.logic.sharding.4g.3db.0rodb.4proxy.default"). It is resolved
 // by the SKR reconciler from the SKR-side redisTier abstraction using a
-// proxy-based sharding class.
+// proxy-based sharding class. Proxy-based classes always have ReadOnlyCount=0.
 //
 // AliCloud does not support changing InstanceClass and ShardCount in the same
 // ModifyInstanceSpec call. The KCP cluster pipeline uses two separate modify
@@ -67,11 +67,11 @@ type RedisClusterAlicloud struct {
 	// +kubebuilder:validation:Required
 	InstanceClass string `json:"instanceClass"`
 
-	// EngineVersion is set at creation and is immutable. Defaults to "7.0" for
-	// cluster instances; standard instances default to "5.0" (see
-	// RedisInstanceAlicloud.EngineVersion).
+	// EngineVersion is set at creation and is immutable. Defaults to "5.0" for
+	// cluster instances (proxy-based sharding classes are available on engine 5.0
+	// in all AliCloud international regions).
 	// +optional
-	// +kubebuilder:default="7.0"
+	// +kubebuilder:default="5.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
 	// +kubebuilder:validation:XValidation:rule=(self == oldSelf),message="engineVersion is immutable."
 	EngineVersion string `json:"engineVersion"`
@@ -82,12 +82,15 @@ type RedisClusterAlicloud struct {
 	// +kubebuilder:validation:Maximum=32
 	ShardCount int32 `json:"shardCount"`
 
-	// ReplicasPerShard: 0 = no replica per shard, 1 = HA per shard.
+	// ReplicasPerShard is the number of read-only replicas per shard. Not
+	// applicable to proxy-based sharding classes (redis.logic.sharding.*),
+	// which always have ReadOnlyCount=0. For non-proxy classes, 0 = no replica,
+	// 1 = one read-only replica per shard.
 	// +optional
-	// +kubebuilder:default=1
+	// +kubebuilder:default=0
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=1
-	ReplicasPerShard int32 `json:"replicasPerShard"`
+	ReplicasPerShard int32 `json:"replicasPerShard,omitempty"`
 
 	// Parameters are passed to the AliCloud instance as runtime configuration.
 	// +optional

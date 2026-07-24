@@ -27,8 +27,11 @@ func FetchApsaraDBCACert(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("fetching ApsaraDB CA chain: %w", err)
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", fmt.Errorf("ApsaraDB CA chain fetch returned HTTP %d", resp.StatusCode)
+	}
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 4<<20))
 	if err != nil {
 		return "", fmt.Errorf("reading ApsaraDB CA chain response: %w", err)
 	}

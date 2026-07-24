@@ -8,7 +8,6 @@ import (
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	alicloudclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/redisinstance/client"
 	"github.com/kyma-project/cloud-manager/pkg/util"
-	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,18 +36,16 @@ func loadRedis(ctx context.Context, st composed.State) (error, context.Context) 
 				return nil, ctx
 			}
 			logger.Error(err, "Error describing AliCloud r-kvstore cluster instance")
-			meta.SetStatusCondition(state.ObjAsRedisCluster().Conditions(), metav1.Condition{
-				Type:    cloudcontrolv1beta1.ConditionTypeError,
-				Status:  metav1.ConditionTrue,
-				Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisCluster,
-				Message: fmt.Sprintf("Failed loading AlicloudRedisCluster: %s", err),
-			})
-			if updErr := state.UpdateObjStatus(ctx); updErr != nil {
-				return composed.LogErrorAndReturn(updErr,
-					"Error updating RedisCluster status after failed DescribeInstance",
-					composed.StopWithRequeueDelay(util.Timing.T10000ms()), ctx)
-			}
-			return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
+			return composed.UpdateStatus(state.ObjAsRedisCluster()).
+				SetExclusiveConditions(metav1.Condition{
+					Type:    cloudcontrolv1beta1.ConditionTypeError,
+					Status:  metav1.ConditionTrue,
+					Reason:  cloudcontrolv1beta1.ReasonFailedCreatingRedisCluster,
+					Message: fmt.Sprintf("Failed loading AlicloudRedisCluster: %s", err),
+				}).
+				ErrorLogMessage("Error updating RedisCluster status after failed DescribeInstance").
+				SuccessError(composed.StopWithRequeueDelay(util.Timing.T60000ms())).
+				Run(ctx, state)
 		}
 		state.instance = info
 		return nil, ctx

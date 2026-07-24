@@ -114,13 +114,20 @@ spec:
                 - C7
                 type: string
               replicasPerShard:
-                default: 1
-                description: 'ReplicasPerShard: 0 = no replica per shard, 1 = HA per
-                  shard.'
+                default: 0
+                description: |-
+                  ReplicasPerShard is the number of read-only replicas per shard.
+                  All tiers currently exposed via redisTier map to proxy-based classes
+                  (redis.logic.sharding.*), which always have ReadOnlyCount=0. This field
+                  is reserved for future non-proxy tiers; it must be 0 for all current tiers.
                 format: int32
                 maximum: 1
                 minimum: 0
                 type: integer
+                x-kubernetes-validations:
+                - message: replicasPerShard must be 0; all current redisTier values
+                    use proxy-based classes that do not support read replicas.
+                  rule: (self == 0)
               shardCount:
                 description: ShardCount is the number of data shards. Mutable via
                   ModifyShardingNum.

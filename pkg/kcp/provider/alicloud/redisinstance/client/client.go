@@ -351,8 +351,7 @@ func (c *alicloudRedisClient) DescribeInstanceByName(ctx context.Context, name s
 				return c.DescribeInstance(ctx, tea.StringValue(inst.InstanceId))
 			}
 		}
-		total := tea.Int32Value(resp.Body.TotalCount)
-		if pageNum*pageSize >= total {
+		if resp.Body.TotalCount == nil || pageNum*pageSize >= tea.Int32Value(resp.Body.TotalCount) {
 			break
 		}
 		pageNum++
