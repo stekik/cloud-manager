@@ -59,7 +59,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 					WithIpRange(skrIpRange.Name),
 					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
 					WithAlicloudRedisClusterShardCount(3),
-					WithAlicloudRedisClusterReplicasPerShard(1),
 					WithAlicloudRedisClusterEngineVersion("7.0"),
 					WithAlicloudRedisClusterAuthSecretName(authSecretName),
 					WithAlicloudRedisClusterAuthSecretLabels(authSecretLabels),
@@ -91,7 +90,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 			Expect(kcpRedisCluster.Spec.Instance.Alicloud).NotTo(BeNil())
 			Expect(kcpRedisCluster.Spec.Instance.Alicloud.InstanceClass).To(Equal("redis.logic.sharding.4g.3db.0rodb.4proxy.default"))
 			Expect(kcpRedisCluster.Spec.Instance.Alicloud.ShardCount).To(Equal(int32(3)))
-			Expect(kcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard).To(Equal(int32(1)))
 			Expect(kcpRedisCluster.Spec.Instance.Alicloud.EngineVersion).To(Equal("7.0"))
 		})
 
@@ -196,7 +194,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 					WithIpRange(skrIpRange.Name),
 					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
 					WithAlicloudRedisClusterShardCount(2),
-					WithAlicloudRedisClusterReplicasPerShard(1),
 					WithAlicloudRedisClusterEngineVersion("7.0"),
 					WithAlicloudRedisClusterAuthSecretName(updateAuthSecretName),
 				).Should(Succeed())
@@ -321,7 +318,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 					WithIpRange(skrIpRange.Name),
 					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
 					WithAlicloudRedisClusterShardCount(2),
-					WithAlicloudRedisClusterReplicasPerShard(1),
 					WithAlicloudRedisClusterEngineVersion("7.0"),
 					WithAlicloudRedisClusterParameters(initialParams),
 				).Should(Succeed())
@@ -398,112 +394,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 		})
 	})
 
-	It("Scenario: SKR AlicloudRedisCluster replicasPerShard is changed", func() {
-
-		skrIpRangeName := uuid.NewString()
-		skrIpRange := &cloudresourcesv1beta1.IpRange{}
-		skrIpRangeId := uuid.NewString()
-
-		By("And Given SKR IpRange exists", func() {
-			skriprange.Ignore.AddName(skrIpRangeName)
-			Eventually(CreateSkrIpRange).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
-					WithName(skrIpRangeName),
-				).Should(Succeed())
-		})
-
-		By("And Given SKR IpRange has Ready condition", func() {
-			Eventually(UpdateStatus).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), skrIpRange,
-					WithSkrIpRangeStatusCidr(skrIpRange.Spec.Cidr),
-					WithSkrIpRangeStatusId(skrIpRangeId),
-					WithConditions(SkrReadyCondition()),
-				).Should(Succeed())
-		})
-
-		alicloudRedisClusterName := uuid.NewString()
-		alicloudRedisCluster := &cloudresourcesv1beta1.AlicloudRedisCluster{}
-
-		By("When AlicloudRedisCluster is created with replicasPerShard=1", func() {
-			Eventually(CreateAlicloudRedisCluster).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
-					WithName(alicloudRedisClusterName),
-					WithIpRange(skrIpRange.Name),
-					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
-					WithAlicloudRedisClusterShardCount(2),
-					WithAlicloudRedisClusterReplicasPerShard(1),
-					WithAlicloudRedisClusterEngineVersion("7.0"),
-				).Should(Succeed())
-		})
-
-		kcpRedisCluster := &cloudcontrolv1beta1.RedisCluster{}
-
-		By("Then KCP RedisCluster is created with replicasPerShard=1", func() {
-			Eventually(LoadAndCheck).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
-					NewObjActions(),
-					HavingFieldSet("status", "id"),
-				).Should(Succeed())
-
-			Eventually(LoadAndCheck).
-				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
-					NewObjActions(WithName(alicloudRedisCluster.Status.Id)),
-				).Should(Succeed())
-
-			Expect(kcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard).To(Equal(int32(1)))
-		})
-
-		By("And Given KCP RedisCluster has Ready condition", func() {
-			Eventually(UpdateStatus).
-				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
-					WithRedisInstanceDiscoveryEndpoint("r-replicas-test.redis.rds.aliyuncs.com:6379"),
-					WithRedisInstanceAuthString(uuid.NewString()),
-					WithConditions(KcpReadyCondition()),
-				).Should(Succeed())
-		})
-
-		By("And Given SKR AlicloudRedisCluster is Ready", func() {
-			Eventually(LoadAndCheck).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
-					NewObjActions(),
-					HavingConditionTrue(cloudresourcesv1beta1.ConditionTypeReady),
-				).Should(Succeed())
-		})
-
-		By("When replicasPerShard is changed to 0", func() {
-			Eventually(func() error {
-				if err := infra.SKR().Client().Get(infra.Ctx(),
-					client.ObjectKeyFromObject(alicloudRedisCluster), alicloudRedisCluster); err != nil {
-					return err
-				}
-				alicloudRedisCluster.Spec.ReplicasPerShard = 0
-				return infra.SKR().Client().Update(infra.Ctx(), alicloudRedisCluster)
-			}).Should(Succeed())
-		})
-
-		By("Then KCP RedisCluster spec is updated with replicasPerShard=0", func() {
-			Eventually(LoadAndCheck).
-				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
-					NewObjActions(),
-					HavingFieldValue(int32(0), "spec", "instance", "alicloud", "replicasPerShard"),
-				).Should(Succeed())
-		})
-
-		// DELETE
-
-		By("When AlicloudRedisCluster is deleted", func() {
-			Eventually(Delete).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster).
-				Should(Succeed())
-		})
-
-		By("Then SKR AlicloudRedisCluster does not exist", func() {
-			Eventually(IsDeleted).
-				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster).
-				Should(Succeed())
-		})
-	})
-
 	It("Scenario: SKR AlicloudRedisCluster reflects Updating condition from KCP", func() {
 
 		skrIpRangeName := uuid.NewString()
@@ -537,7 +427,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 					WithIpRange(skrIpRange.Name),
 					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
 					WithAlicloudRedisClusterShardCount(2),
-					WithAlicloudRedisClusterReplicasPerShard(1),
 					WithAlicloudRedisClusterEngineVersion("7.0"),
 				).Should(Succeed())
 		})
@@ -647,7 +536,6 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 					WithIpRange(skrIpRange.Name),
 					WithAlicloudRedisClusterRedisTier(cloudresourcesv1beta1.AlicloudRedisClusterTierC3),
 					WithAlicloudRedisClusterShardCount(2),
-					WithAlicloudRedisClusterReplicasPerShard(1),
 					WithAlicloudRedisClusterEngineVersion("7.0"),
 				).Should(Succeed())
 		})
@@ -704,6 +592,23 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", func() {
 					NewObjActions(),
 					HavingFieldValue("redis.logic.sharding.4g.4db.0rodb.4proxy.default", "spec", "instance", "alicloud", "instanceClass"),
 					HavingFieldValue(int32(4), "spec", "instance", "alicloud", "shardCount"),
+				).Should(Succeed())
+		})
+
+		By("And Given KCP RedisCluster is Ready after shardCount change", func() {
+			Eventually(UpdateStatus).
+				WithArguments(infra.Ctx(), infra.KCP().Client(), kcpRedisCluster,
+					WithRedisInstanceDiscoveryEndpoint("r-shardcount-test.redis.rds.aliyuncs.com:6379"),
+					WithRedisInstanceAuthString(kcpRedisCluster.Status.AuthString),
+					WithConditions(KcpReadyCondition()),
+				).Should(Succeed())
+		})
+
+		By("Then SKR AlicloudRedisCluster returns to Ready after shardCount change", func() {
+			Eventually(LoadAndCheck).
+				WithArguments(infra.Ctx(), infra.SKR().Client(), alicloudRedisCluster,
+					NewObjActions(),
+					HavingConditionTrue(cloudresourcesv1beta1.ConditionTypeReady),
 				).Should(Succeed())
 		})
 

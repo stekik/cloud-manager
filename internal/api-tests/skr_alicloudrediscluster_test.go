@@ -96,22 +96,21 @@ var _ = Describe("Feature: SKR AlicloudRedisCluster", Ordered, func() {
 		)
 	})
 
-	Context("Scenario: replicasPerShard mutability", func() {
+	Context("Scenario: replicasPerShard validation", func() {
 
-		canChangeSkr(
-			"AlicloudRedisCluster replicasPerShard can be changed from 1 to 0",
+		canNotCreateSkr(
+			"AlicloudRedisCluster cannot be created with replicasPerShard=1",
 			newTestAlicloudRedisClusterBuilder().WithReplicasPerShard(1),
-			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisCluster]) {
-				b.(*testAlicloudRedisClusterBuilder).WithReplicasPerShard(0)
-			},
+			"replicasPerShard must be 0",
 		)
 
-		canChangeSkr(
-			"AlicloudRedisCluster replicasPerShard can be changed from 0 to 1",
+		canNotChangeSkr(
+			"AlicloudRedisCluster replicasPerShard cannot be changed to 1",
 			newTestAlicloudRedisClusterBuilder().WithReplicasPerShard(0),
 			func(b Builder[*cloudresourcesv1beta1.AlicloudRedisCluster]) {
 				b.(*testAlicloudRedisClusterBuilder).WithReplicasPerShard(1)
 			},
+			"replicasPerShard must be 0",
 		)
 	})
 

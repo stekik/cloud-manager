@@ -42,11 +42,15 @@ type AlicloudRedisClusterSpec struct {
 	// +kubebuilder:validation:Maximum=32
 	ShardCount int32 `json:"shardCount"`
 
-	// ReplicasPerShard: 0 = no replica per shard, 1 = HA per shard.
+	// ReplicasPerShard is the number of read-only replicas per shard.
+	// All tiers currently exposed via redisTier map to proxy-based classes
+	// (redis.logic.sharding.*), which always have ReadOnlyCount=0. This field
+	// is reserved for future non-proxy tiers; it must be 0 for all current tiers.
 	// +optional
-	// +kubebuilder:default=1
+	// +kubebuilder:default=0
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=1
+	// +kubebuilder:validation:XValidation:rule=(self == 0),message="replicasPerShard must be 0; all current redisTier values use proxy-based classes that do not support read replicas."
 	ReplicasPerShard int32 `json:"replicasPerShard"`
 
 	// EngineVersion is the Redis engine version. Immutable after creation.

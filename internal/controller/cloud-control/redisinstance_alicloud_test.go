@@ -417,6 +417,12 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 				).Should(Succeed(), "expected RedisInstance to reach Ready with parameters")
 		})
 
+		By("And Given mock Config reflects the applied parameters", func() {
+			entry := alicloudMock.GetRedisInstance(redisInstance.Status.Id)
+			Expect(entry).NotTo(BeNil())
+			entry.Config = `{"maxmemory-policy":"allkeys-lru"}`
+		})
+
 		By("When parameters are cleared", func() {
 			Eventually(func() error {
 				if err := infra.KCP().Client().Get(infra.Ctx(),
@@ -426,6 +432,17 @@ var _ = Describe("Feature: KCP AliCloud RedisInstance", func() {
 				redisInstance.Spec.Instance.Alicloud.Parameters = nil
 				return infra.KCP().Client().Update(infra.Ctx(), redisInstance)
 			}).Should(Succeed())
+		})
+
+		By("Then mock Config is cleared to {}", func() {
+			Eventually(func() string {
+				alicloudMock.TransitionAllToNormal()
+				e := alicloudMock.GetRedisInstance(redisInstance.Status.Id)
+				if e == nil {
+					return ""
+				}
+				return e.Config
+			}).Should(Equal("{}"))
 		})
 
 		By("Then RedisInstance is still Ready after parameter clearing", func() {
