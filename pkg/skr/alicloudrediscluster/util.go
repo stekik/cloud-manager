@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"regexp"
 	"strings"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
@@ -105,4 +106,20 @@ func redisTierToInstanceClass(tier cloudresourcesv1beta1.AlicloudRedisClusterTie
 		proxyCount = 4
 	}
 	return fmt.Sprintf("redis.logic.sharding.%dg.%ddb.0rodb.%dproxy.default", memGb, shardCount, proxyCount), nil
+}
+
+// skrProxyShardTokensRe matches the shard-count and proxy-count tokens in
+// proxy class names, e.g. ".4db.0rodb.8proxy." in
+// "redis.logic.sharding.4g.4db.0rodb.8proxy.default".
+var skrProxyShardTokensRe = regexp.MustCompile(`\.\d+db\.0rodb\.\d+proxy\.`)
+
+// proxyClassTierKey strips the shard-count and proxy-count tokens from a
+// proxy class name so that classes that differ only in shardCount compare as
+// equal. Non-proxy class strings are returned unchanged.
+func proxyClassTierKey(class string) string {
+	if !strings.HasPrefix(class, "redis.logic.sharding.") &&
+		!strings.HasPrefix(class, "redis.amber.logic.sharding.") {
+		return class
+	}
+	return skrProxyShardTokensRe.ReplaceAllLiteralString(class, ".<N>db.0rodb.<N>proxy.")
 }
