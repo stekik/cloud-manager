@@ -31,10 +31,13 @@ func modifyParameters(ctx context.Context, st composed.State) (error, context.Co
 	currentFull := map[string]string{}
 	if state.instance.Config != "" {
 		raw := map[string]interface{}{}
-		if err := json.Unmarshal([]byte(state.instance.Config), &raw); err == nil {
-			for k, v := range raw {
-				currentFull[k] = fmt.Sprintf("%v", v)
-			}
+		if err := json.Unmarshal([]byte(state.instance.Config), &raw); err != nil {
+			return composed.LogErrorAndReturn(err,
+				"Error parsing AliCloud r-kvstore cluster config JSON; will retry",
+				composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx)
+		}
+		for k, v := range raw {
+			currentFull[k] = fmt.Sprintf("%v", v)
 		}
 	}
 

@@ -99,7 +99,11 @@ func (s *State) ShouldModifyKcp() bool {
 		return true
 	}
 
-	isInstanceClassDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.InstanceClass != instanceClass
+	// Compare tier keys rather than full class strings: for proxy classes the
+	// class name encodes shardCount, so a shard-count-only change must not be
+	// treated as a tier (instanceClass) change here — isShardCountDifferent
+	// already captures that.
+	isInstanceClassDifferent := proxyClassTierKey(s.KcpRedisCluster.Spec.Instance.Alicloud.InstanceClass) != proxyClassTierKey(instanceClass)
 	isShardCountDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.ShardCount != alicloudRedisCluster.Spec.ShardCount
 	isReplicasPerShardDifferent := s.KcpRedisCluster.Spec.Instance.Alicloud.ReplicasPerShard != alicloudRedisCluster.Spec.ReplicasPerShard
 

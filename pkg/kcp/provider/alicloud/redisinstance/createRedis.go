@@ -76,9 +76,14 @@ func createRedis(ctx context.Context, st composed.State) (error, context.Context
 	var lastErr error
 	allZonesFailed := true
 	for _, vSwitchId := range vSwitchIds {
-		// Include vSwitchId in the token so each (class, vSwitch) pair has its
-		// own idempotency token - AliCloud rejects same token with different params.
-		tokenInput := string(kcp.UID) + password + kcp.Spec.Instance.Alicloud.InstanceClass + vSwitchId
+		// "v2" suffix rotates tokens away from v1 tokens that omitted ReadOnlyCount.
+		// Different ReadOnlyCount values must not share a token — AliCloud would
+		// return the existing instance without applying the new replica count.
+		tokenInput := fmt.Sprintf("%s%s%s%s%dv2",
+			string(kcp.UID), password,
+			kcp.Spec.Instance.Alicloud.InstanceClass, vSwitchId,
+			kcp.Spec.Instance.Alicloud.ReadOnlyCount,
+		)
 		tokenHash := fmt.Sprintf("%x", sha256.Sum256([]byte(tokenInput)))[:32]
 
 		opts := alicloudclient.CreateInstanceOptions{

@@ -547,9 +547,17 @@ func (s *redisStore) describeInstanceSSL(_ context.Context, instanceId string) (
 		return false, err
 	}
 	if e := s.instances[instanceId]; e != nil {
+		// While SSLModifying, return the pending value so callers see the
+		// in-flight target and don't retry the operation in a loop.
+		if e.PendingSslEnabled != nil {
+			return *e.PendingSslEnabled, nil
+		}
 		return e.SslEnabled, nil
 	}
 	if e := s.clusters[instanceId]; e != nil {
+		if e.PendingSslEnabled != nil {
+			return *e.PendingSslEnabled, nil
+		}
 		return e.SslEnabled, nil
 	}
 	return false, fmt.Errorf("instance %s not found", instanceId)
