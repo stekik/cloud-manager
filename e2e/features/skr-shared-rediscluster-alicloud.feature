@@ -19,7 +19,7 @@ Feature: AlicloudRedisCluster feature
       spec:
         redisTier: C3
         shardCount: 4
-        replicasPerShard: 1
+        replicasPerShard: 0
         engineVersion: "5.0"
         parameters:
           maxmemory-policy: volatile-lru
