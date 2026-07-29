@@ -445,6 +445,11 @@ var providerRegions = map[cloudcontrolv1beta1.ProviderType]map[string][]string{
 			"ap-northeast-1b",
 			"ap-northeast-1c",
 		},
+		"ap-southeast-5": {
+			"ap-southeast-5a",
+			"ap-southeast-5b",
+			"ap-southeast-5c",
+		},
 	},
 }
 
