@@ -61,7 +61,8 @@ attachPolicyToUser() {
   local policy_name=$2
 
   log "Attaching policy $policy_name to RAM user $user_name"
-  aliyun ram AttachPolicyToUser --PolicyType Custom --PolicyName "$policy_name" --UserName "$user_name" > /dev/null
+  # AttachPolicyToUser errors if already attached; suppress to allow re-runs.
+  aliyun ram AttachPolicyToUser --PolicyType Custom --PolicyName "$policy_name" --UserName "$user_name" > /dev/null 2>&1 || true
 
   return 0
 }

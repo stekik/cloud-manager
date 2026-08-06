@@ -62,7 +62,7 @@ runs:
           - name: gardener-sc-learn
             provider: gcp
             isDefault: true
-          - name: alicloud-skikic
+          - name: cm-e2e-alicloud
             provider: alicloud
             isDefault: true
         networkOwner: gardener
@@ -98,7 +98,7 @@ runs:
             OS_APPLICATION_CREDENTIAL_ID: applicationCredentialID
             OS_APPLICATION_CREDENTIAL_NAME: applicationCredentialName
             OS_APPLICATION_CREDENTIAL_SECRET: applicationCredentialSecret
-          alicloud-skikic:
+          cm-e2e-alicloud:
             ALICLOUD_ACCESS_KEY: accessKeyID
             ALICLOUD_SECRET_KEY: accessKeySecret
         EOF
