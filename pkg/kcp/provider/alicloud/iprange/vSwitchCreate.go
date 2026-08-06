@@ -4,17 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	alicloudiprangeclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/iprange/client"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-func isVSwitchCidrOverlapErr(err error) bool {
-	return err != nil && strings.Contains(err.Error(), "InvalidCidrBlock.Overlapped")
-}
 
 func vSwitchCreate(ctx context.Context, st composed.State) (error, context.Context) {
 	state := st.(*State)
@@ -74,7 +69,7 @@ func vSwitchCreate(ctx context.Context, st composed.State) (error, context.Conte
 
 		vSwitchId, err := state.client.CreateVSwitch(ctx, state.vpcId, zoneName, zoneCidr, name)
 		if err != nil {
-			if isVSwitchCidrOverlapErr(err) {
+			if alicloudiprangeclient.IsVSwitchCidrOverlapErr(err) {
 				// CIDR already used by an existing vSwitch - look it up by name instead of failing.
 				existing, lookupErr := state.client.DescribeVSwitchesByName(ctx, state.vpcId, name)
 				if lookupErr == nil && len(existing) > 0 {
@@ -91,7 +86,7 @@ func vSwitchCreate(ctx context.Context, st composed.State) (error, context.Conte
 					Type:    cloudcontrolv1beta1.ConditionTypeError,
 					Status:  metav1.ConditionTrue,
 					Reason:  cloudcontrolv1beta1.ReasonCloudProviderError,
-					Message: fmt.Sprintf("Error creating VSwitch: %s", err),
+					Message: "Error creating VSwitch; see controller logs for details",
 				}).
 				ErrorLogMessage("Error patching AliCloud KCP IpRange status after failed VSwitch create").
 				SuccessError(composed.StopWithRequeue).

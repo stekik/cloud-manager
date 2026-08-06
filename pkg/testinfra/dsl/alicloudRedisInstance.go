@@ -290,18 +290,6 @@ func WithAlicloudRedisClusterShardCount(shardCount int32) ObjAction {
 	}
 }
 
-func WithAlicloudRedisClusterReplicasPerShard(replicasPerShard int32) ObjAction {
-	return &objAction{
-		f: func(obj client.Object) {
-			if x, ok := obj.(*cloudresourcesv1beta1.AlicloudRedisCluster); ok {
-				x.Spec.ReplicasPerShard = replicasPerShard
-				return
-			}
-			panic(fmt.Errorf("unhandled type %T in WithAlicloudRedisClusterReplicasPerShard", obj))
-		},
-	}
-}
-
 func WithAlicloudRedisClusterEngineVersion(engineVersion string) ObjAction {
 	return &objAction{
 		f: func(obj client.Object) {

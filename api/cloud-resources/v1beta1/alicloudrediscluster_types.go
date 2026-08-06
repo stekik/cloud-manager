@@ -51,7 +51,7 @@ type AlicloudRedisClusterSpec struct {
 	// +kubebuilder:validation:Minimum=0
 	// +kubebuilder:validation:Maximum=1
 	// +kubebuilder:validation:XValidation:rule=(self == 0),message="replicasPerShard must be 0; all current redisTier values use proxy-based classes that do not support read replicas."
-	ReplicasPerShard int32 `json:"replicasPerShard"`
+	ReplicasPerShard int32 `json:"replicasPerShard,omitempty"`
 
 	// EngineVersion is the Redis engine version. Immutable after creation.
 	// +optional

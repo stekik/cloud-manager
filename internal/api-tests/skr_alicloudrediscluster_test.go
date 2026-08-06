@@ -35,7 +35,7 @@ func (b *testAlicloudRedisClusterBuilder) WithShardCount(shardCount int32) *test
 }
 
 func (b *testAlicloudRedisClusterBuilder) WithReplicasPerShard(replicasPerShard int32) *testAlicloudRedisClusterBuilder {
-	b.AlicloudRedisClusterBuilder.WithReplicasPerShard(replicasPerShard)
+	b.AlicloudRedisCluster.Spec.ReplicasPerShard = replicasPerShard
 	return b
 }
 

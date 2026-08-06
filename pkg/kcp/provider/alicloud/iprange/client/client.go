@@ -297,3 +297,13 @@ func IsCidrInUseErr(err error) bool {
 	}
 	return false
 }
+
+// IsVSwitchCidrOverlapErr returns true when AliCloud rejects a CreateVSwitch
+// call because the requested CIDR block overlaps with an existing vSwitch.
+func IsVSwitchCidrOverlapErr(err error) bool {
+	var sdkErr *tea.SDKError
+	if errors.As(err, &sdkErr) && sdkErr.Code != nil {
+		return tea.StringValue(sdkErr.Code) == "InvalidCidrBlock.Overlapped"
+	}
+	return false
+}
