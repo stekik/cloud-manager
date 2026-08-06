@@ -14,7 +14,6 @@ spec:
   shardCount: 3
 
   # optional fields
-  replicasPerShard: 1
   engineVersion: "7.0"
   parameters:
     maxmemory-policy: volatile-lru

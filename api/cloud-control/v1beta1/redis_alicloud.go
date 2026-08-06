@@ -33,8 +33,7 @@ type RedisInstanceAlicloud struct {
 	InstanceClass string `json:"instanceClass"`
 
 	// EngineVersion is set at creation and is immutable. Defaults to "5.0" for
-	// standard instances (broad class compatibility); cluster instances default
-	// to "7.0" (see RedisClusterAlicloud.EngineVersion).
+	// standard instances (broad class compatibility).
 	// +optional
 	// +kubebuilder:default="5.0"
 	// +kubebuilder:validation:Enum="5.0";"6.0";"7.0"
