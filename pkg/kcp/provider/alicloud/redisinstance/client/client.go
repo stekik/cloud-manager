@@ -216,11 +216,11 @@ type ClientProvider func(ctx context.Context, region, accessKeyId, accessKeySecr
 func NewClientProvider() ClientProvider {
 	return func(ctx context.Context, region, accessKeyId, accessKeySecret string) (Client, error) {
 		config := &openapi.Config{
-			AccessKeyId:     new(accessKeyId),
-			AccessKeySecret: new(accessKeySecret),
-			RegionId:        new(region),
+			AccessKeyId:     tea.String(accessKeyId),
+			AccessKeySecret: tea.String(accessKeySecret),
+			RegionId:        tea.String(region),
 		}
-		config.Endpoint = new(fmt.Sprintf("r-kvstore.%s.aliyuncs.com", region))
+		config.Endpoint = tea.String(fmt.Sprintf("r-kvstore.%s.aliyuncs.com", region))
 
 		rc, err := rkvstore.NewClient(config)
 		if err != nil {
