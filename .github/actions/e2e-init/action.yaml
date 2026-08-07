@@ -206,8 +206,6 @@ runs:
         FEATURE_FLAG_CONFIG_FILE: ${{ inputs.feature_flag_file }}
         GCP_SA_JSON_KEY_PATH: ./tmp/gcp-default.json
         GCP_VPC_PEERING_KEY_PATH: ./tmp/gcp-peering.json
-        ALICLOUD_ACCESS_KEY: ${{ env.ALICLOUD_ACCESS_KEY }}
-        ALICLOUD_SECRET_KEY: ${{ env.ALICLOUD_SECRET_KEY }}
       run: |
         go run ./cmd > ./tmp/cloud-manager.log 2>&1 &
         CLOUD_MANAGER_PID=$!

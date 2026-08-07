@@ -229,10 +229,10 @@ func (b *RuntimeBuilder) WithProvider(provider cloudcontrolv1beta1.ProviderType,
 			MaxSurge:       new(intstr.FromInt32(3)),
 			MaxUnavailable: new(intstr.FromInt32(0)),
 			// Minimum=1/Maximum=3: intentionally small for cost efficiency in e2e; all providers work fine with 1–3 nodes.
-			Minimum:        1,
-			Maximum:        3,
-			Volume:         vol,
-			Zones:          zones,
+			Minimum: 1,
+			Maximum: 3,
+			Volume:  vol,
+			Zones:   zones,
 		},
 	}
 	return b
@@ -434,7 +434,7 @@ var providerRegions = map[cloudcontrolv1beta1.ProviderType]map[string][]string{
 		"eu-central-1": {
 			"eu-central-1a",
 			"eu-central-1b",
-			"eu-central-1c",
+			// zone c removed pending availability confirmation in Gardener cloud profile
 		},
 		"ap-southeast-1": {
 			"ap-southeast-1a",
@@ -444,7 +444,7 @@ var providerRegions = map[cloudcontrolv1beta1.ProviderType]map[string][]string{
 		"ap-northeast-1": {
 			"ap-northeast-1a",
 			"ap-northeast-1b",
-			"ap-northeast-1c",
+			// zone c removed pending availability confirmation in Gardener cloud profile
 		},
 		"ap-southeast-5": {
 			"ap-southeast-5a",
@@ -459,7 +459,12 @@ var machineTypes = map[cloudcontrolv1beta1.ProviderType][]string{
 	cloudcontrolv1beta1.ProviderGCP:       {"n2-standard-2"},
 	cloudcontrolv1beta1.ProviderAzure:     {"Standard_D2s_v5", "Standard_D4s_v5"},
 	cloudcontrolv1beta1.ProviderOpenStack: {"g_c2_m8"},
-	cloudcontrolv1beta1.ProviderAlicloud:  {"ecs.c9i.large"},
+	cloudcontrolv1beta1.ProviderAlicloud: {
+		// ecs.c9i.large: 3rd-gen compute-optimized (Intel Ice Lake). Verify
+		// availability in eu-central-1 and ap-northeast-1 before those regions
+		// are used in CI.
+		"ecs.c9i.large",
+	},
 }
 
 var volumeTypes = map[cloudcontrolv1beta1.ProviderType]string{
