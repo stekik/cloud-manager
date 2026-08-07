@@ -38,11 +38,11 @@ createPolicy() {
     aliyun ram CreatePolicy --PolicyName "$policy_name" --PolicyDocument "$policy_doc" > /dev/null
     log "RAM policy $policy_name is created"
   else
-    log "RAM policy $policy_name already exists, creating new version..."
+    log "RAM policy $policy_name already exists, updating it..."
     local policy_doc
     policy_doc=$(cat "$policy_file")
-    aliyun ram CreatePolicyVersion --PolicyName "$policy_name" --PolicyDocument "$policy_doc" --SetAsDefault true > /dev/null
-    # Keep at most 5 versions; delete the oldest non-default ones if needed
+    # AliCloud limits policies to 5 versions (1 default + 4 non-default).
+    # Prune oldest non-default versions first to make room for the new one.
     local versions
     versions=$(aliyun ram ListPolicyVersions --PolicyType Custom --PolicyName "$policy_name" \
       | jq -r '.PolicyVersions.PolicyVersion[] | select(.IsDefaultVersion == false) | .VersionId' \
@@ -51,6 +51,7 @@ createPolicy() {
       log "Deleting old policy version $v..."
       aliyun ram DeletePolicyVersion --PolicyName "$policy_name" --VersionId "$v" > /dev/null
     done
+    aliyun ram CreatePolicyVersion --PolicyName "$policy_name" --PolicyDocument "$policy_doc" --SetAsDefault true > /dev/null
   fi
 
   return 0
