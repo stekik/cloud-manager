@@ -434,7 +434,7 @@ var providerRegions = map[cloudcontrolv1beta1.ProviderType]map[string][]string{
 		"eu-central-1": {
 			"eu-central-1a",
 			"eu-central-1b",
-			// zone c removed pending availability confirmation in Gardener cloud profile
+			"eu-central-1c",
 		},
 		"ap-southeast-1": {
 			"ap-southeast-1a",
@@ -444,7 +444,7 @@ var providerRegions = map[cloudcontrolv1beta1.ProviderType]map[string][]string{
 		"ap-northeast-1": {
 			"ap-northeast-1a",
 			"ap-northeast-1b",
-			// zone c removed pending availability confirmation in Gardener cloud profile
+			"ap-northeast-1c",
 		},
 		"ap-southeast-5": {
 			"ap-southeast-5a",
@@ -460,9 +460,6 @@ var machineTypes = map[cloudcontrolv1beta1.ProviderType][]string{
 	cloudcontrolv1beta1.ProviderAzure:     {"Standard_D2s_v5", "Standard_D4s_v5"},
 	cloudcontrolv1beta1.ProviderOpenStack: {"g_c2_m8"},
 	cloudcontrolv1beta1.ProviderAlicloud: {
-		// ecs.c9i.large: 3rd-gen compute-optimized (Intel Ice Lake). Verify
-		// availability in eu-central-1 and ap-northeast-1 before those regions
-		// are used in CI.
 		"ecs.c9i.large",
 	},
 }
