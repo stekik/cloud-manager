@@ -42,11 +42,13 @@ createPolicy() {
     local policy_doc
     policy_doc=$(cat "$policy_file")
     # AliCloud limits policies to 5 versions (1 default + 4 non-default).
-    # Prune oldest non-default versions first to make room for the new one.
+    # Prune oldest non-default versions to ensure at most 3 exist before creating
+    # a new one (keeping up to 4 total non-default is safe; head -n -3 deletes
+    # the oldest entry only when 4 are already present).
     local versions
     versions=$(aliyun ram ListPolicyVersions --PolicyType Custom --PolicyName "$policy_name" \
       | jq -r '.PolicyVersions.PolicyVersion[] | select(.IsDefaultVersion == false) | .VersionId' \
-      | sort | head -n -4)
+      | sort | head -n -3)
     for v in $versions; do
       log "Deleting old policy version $v..."
       aliyun ram DeletePolicyVersion --PolicyName "$policy_name" --VersionId "$v" > /dev/null
