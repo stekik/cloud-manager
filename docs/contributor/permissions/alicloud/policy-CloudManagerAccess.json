@@ -26,7 +26,18 @@
         "vpc:DescribeVSwitches",
         "vpc:DescribeVpcs",
         "vpc:DescribeZones",
-        "vpc:UnassociateVpcCidrBlock"
+        "vpc:UnassociateVpcCidrBlock",
+        "nas:CreateAccessGroup",
+        "nas:CreateAccessRule",
+        "nas:CreateFileSystem",
+        "nas:CreateMountTarget",
+        "nas:DeleteAccessGroup",
+        "nas:DeleteFileSystem",
+        "nas:DeleteMountTarget",
+        "nas:DescribeAccessGroups",
+        "nas:DescribeAccessRules",
+        "nas:DescribeFileSystems",
+        "nas:DescribeMountTargets"
       ],
       "Resource": "*"
     }
