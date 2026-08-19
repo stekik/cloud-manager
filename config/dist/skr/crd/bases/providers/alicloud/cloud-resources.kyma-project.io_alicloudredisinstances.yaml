@@ -123,7 +123,6 @@ spec:
                     - message: Service tier cannot be changed within redisTier. Only capacity tier can be changed.
                       rule: (self.startsWith('S') && oldSelf.startsWith('S') || self.startsWith('P') && oldSelf.startsWith('P'))
               required:
-                - engineVersion
                 - redisTier
               type: object
             status:
