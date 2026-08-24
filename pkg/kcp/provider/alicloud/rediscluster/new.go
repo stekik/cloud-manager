@@ -21,7 +21,7 @@ func New(stateFactory StateFactory) composed.Action {
 			return composed.StopWithRequeueDelay(util.Timing.T60000ms()), ctx
 		}
 
-		return composed.ComposeActionsNoName(
+		return composed.ComposeActions("alicloudRedisCluster",
 			actions.AddCommonFinalizer(),
 			loadRedis,
 			// Sync the Updating condition immediately after loading the instance so
@@ -31,7 +31,7 @@ func New(stateFactory StateFactory) composed.Action {
 
 			// delete ================================================================================
 			composed.If(composed.MarkedForDeletionPredicate,
-				composed.ComposeActionsNoName(
+				composed.ComposeActions("alicloudRedisCluster-delete",
 					removeReadyCondition,
 					// Wait for Normal before deleting: AliCloud rejects DeleteInstance
 					// while the instance is still Creating or Changing.
@@ -45,7 +45,7 @@ func New(stateFactory StateFactory) composed.Action {
 
 			// create/update =========================================================================
 			composed.If(composed.NotMarkedForDeletionPredicate,
-				composed.ComposeActionsNoName(
+				composed.ComposeActions("alicloudRedisCluster-create",
 					createRedis,
 					waitRedisAvailable,
 					setSecurityIps,
