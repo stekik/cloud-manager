@@ -1,0 +1,32 @@
+package alicloudvpcpeering
+
+import (
+	"context"
+
+	"github.com/kyma-project/cloud-manager/api"
+	"github.com/kyma-project/cloud-manager/pkg/composed"
+	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+)
+
+func addFinalizer(ctx context.Context, st composed.State) (error, context.Context) {
+	state := st.(*State)
+	logger := composed.LoggerFromCtx(ctx)
+
+	if composed.MarkedForDeletionPredicate(ctx, state) {
+		return nil, ctx
+	}
+
+	added := controllerutil.AddFinalizer(state.Obj(), api.CommonFinalizerDeletionHook)
+	if !added {
+		return nil, ctx
+	}
+
+	err := state.UpdateObj(ctx)
+	if err != nil {
+		return composed.LogErrorAndReturn(err, "Error saving AlicloudVpcPeering after finalizer added", composed.StopWithRequeue, ctx)
+	}
+
+	logger.Info("Added finalizer to SKR AlicloudVpcPeering, requeue")
+
+	return composed.StopWithRequeue, ctx
+}
