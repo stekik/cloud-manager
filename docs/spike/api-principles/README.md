@@ -5,3 +5,7 @@
 # 1) Current model
 
 - [overview](./01-current-model/overview.md)
+
+# 2) Industry patterns
+
+- [overview](./02-industry-patterns/overview.md)
