@@ -57,7 +57,6 @@ func createKcpVpcPeering(ctx context.Context, st composed.State) (error, context
 					Namespace: state.KymaRef.Namespace,
 				},
 				RemoteRouteTableUpdateStrategy: cloudcontrolv1beta1.AwsRouteTableUpdateStrategy(obj.Spec.RemoteRouteTableUpdateStrategy),
-				Bandwidth:                      obj.Spec.Bandwidth,
 			},
 		},
 	}
