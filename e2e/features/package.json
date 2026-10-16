@@ -4,6 +4,9 @@
   "description": "Structural lint for e2e Gherkin feature files",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@cucumber/gherkin": "42.0.1",
     "@cucumber/gherkin-utils": "12.0.2",
