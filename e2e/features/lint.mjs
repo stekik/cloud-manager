@@ -53,9 +53,11 @@ for (const file of files) {
   }
 
   const seen = new Set()
-  for (const child of feature.children) {
-    const sc = child.scenario
-    if (!sc) continue // Background / Rule have no name requirement here
+  // Scenarios live directly under the feature or nested inside Rule blocks.
+  const scenarios = feature.children.flatMap((c) =>
+    c.rule ? c.rule.children.map((rc) => rc.scenario) : [c.scenario])
+  for (const sc of scenarios) {
+    if (!sc) continue // Background has no name requirement here
 
     if (!sc.name || !sc.name.trim()) {
       err(file, `${sc.keyword.trim()} at line ${sc.location.line} has no name (no-unnamed-scenarios)`)
