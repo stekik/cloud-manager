@@ -19,15 +19,20 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: ${{ vars.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: e2e/features/package-lock.json
+
+      - name: Install gherkin tooling
+        shell: bash
+        working-directory: e2e/features
+        run: npm ci
 
       - name: Gherkin format check
         shell: bash
         run: |
-          npx -y @cucumber/gherkin-utils@12.0.2 format e2e/features/*.feature
+          ./e2e/features/node_modules/.bin/gherkin-utils format e2e/features/*.feature
           git diff --exit-code e2e/features
 
       - name: Gherkin structural lint
         shell: bash
-        run: |
-          npm install --no-save @cucumber/gherkin@42.0.1 @cucumber/messages@34.2.1
-          node e2e/features/lint.mjs e2e/features/*.feature
+        run: node e2e/features/lint.mjs e2e/features/*.feature

@@ -1,0 +1,12 @@
+{
+  "name": "cloud-manager-gherkin-lint",
+  "version": "1.0.0",
+  "description": "Structural lint for e2e Gherkin feature files",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@cucumber/gherkin": "42.0.1",
+    "@cucumber/gherkin-utils": "12.0.2",
+    "@cucumber/messages": "34.2.1"
+  }
+}
