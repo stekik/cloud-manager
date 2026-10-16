@@ -2,13 +2,10 @@ Feature: WafPolicy feature
 
   @skr @aws @waf
   Scenario: WafPolicy with ManagedRuleGroup statements
-
     Given there is shared SKR with "AWS" provider
-
     And resource declaration:
-      | Alias     | Kind                | ApiVersion                              | Name                 | Namespace |
-      | policy    | WafPolicy           | cloud-resources.kyma-project.io/v1beta1 | e2e-${id()}          |           |
-
+      | Alias  | Kind      | ApiVersion                              | Name        | Namespace |
+      | policy | WafPolicy | cloud-resources.kyma-project.io/v1beta1 | e2e-${id()} |           |
     # Create WebACL demonstrating ManagedRuleGroup with different configurations
     When resource "policy" is created:
       """
@@ -169,31 +166,25 @@ Feature: WafPolicy feature
             ]
           }
       """
-
     Then eventually "findConditionTrue(policy, 'Ready')" is ok, unless:
       | findConditionFalse(policy, 'Ready') |
       | #timeout=20m                        |
-
     And "policy.status.providerId" is ok
-
     # Clean up
     When resource "policy" is deleted
     Then eventually resource "policy" does not exist
 
   @skr @aws @waf
   Scenario: Deploy httpbin application and protect it with AWS WAF
-
     Given there is shared SKR with "AWS" provider
-
     And resource declaration:
-      | Alias           | Kind               | ApiVersion                              | Name                       | Namespace |
-      | policy          | WafPolicy          | cloud-resources.kyma-project.io/v1beta1 | e2e-${scenarioId}          | default   |
-      | sa              | ServiceAccount     | v1                                      | e2e-${scenarioId}          | default   |
-      | service         | Service            | v1                                      | e2e-${scenarioId}          | default   |
-      | deployment      | Deployment         | apps/v1                                 | e2e-${scenarioId}          | default   |
-      | ingressclass    | IngressClass       | networking.k8s.io/v1                    | alb                        |           |
-      | ingress         | Ingress            | networking.k8s.io/v1                    | e2e-${scenarioId}          | default   |
-
+      | Alias        | Kind           | ApiVersion                              | Name              | Namespace |
+      | policy       | WafPolicy      | cloud-resources.kyma-project.io/v1beta1 | e2e-${scenarioId} | default   |
+      | sa           | ServiceAccount | v1                                      | e2e-${scenarioId} | default   |
+      | service      | Service        | v1                                      | e2e-${scenarioId} | default   |
+      | deployment   | Deployment     | apps/v1                                 | e2e-${scenarioId} | default   |
+      | ingressclass | IngressClass   | networking.k8s.io/v1                    | alb               |           |
+      | ingress      | Ingress        | networking.k8s.io/v1                    | e2e-${scenarioId} | default   |
     # Step 1: Create WAF Policy with security rules
     When resource "policy" is created:
       """
@@ -251,20 +242,16 @@ Feature: WafPolicy feature
             ]
           }
       """
-
     Then eventually "findConditionTrue(policy, 'Ready')" is ok, unless:
       | findConditionFalse(policy, 'Ready') |
       | #timeout=3m                         |
-
     And "policy.status.providerId" is ok
-
     # Step 2: Deploy httpbin application
     When resource "sa" is created:
       """
       apiVersion: v1
       kind: ServiceAccount
       """
-
     And resource "service" is created:
       """
       apiVersion: v1
@@ -282,7 +269,6 @@ Feature: WafPolicy feature
         selector:
           app: ${policy.metadata.name}
       """
-
     And resource "deployment" is created:
       """
       apiVersion: apps/v1
@@ -307,10 +293,8 @@ Feature: WafPolicy feature
               ports:
               - containerPort: 80
       """
-
     Then eventually "deployment.status.availableReplicas > 0" is ok, unless:
       | #timeout=2m |
-
     # Step 3: Create IngressClass for ALB
     When resource "ingressclass" is created:
       """
@@ -321,7 +305,6 @@ Feature: WafPolicy feature
       spec:
         controller: ingress.k8s.aws/alb
       """
-
     # Step 4: Expose application via ALB
     When resource "ingress" is created:
       """
@@ -346,36 +329,26 @@ Feature: WafPolicy feature
                   port:
                     number: 8000
       """
-
     Then eventually "ingress.status.loadBalancer.ingress[0].hostname != ''" is ok, unless:
       | #timeout=20m |
-
     # Step 5 & 6: Test with WAF protection -  XSS is blocked, normal requests work
     And HTTP operation succeeds:
-      | Url              | http://${ingress.status.loadBalancer.ingress[0].hostname}/base64/SFRUUEJJTiBpcyBhd2Vzb21l?q=%3Cscript%3Ealert%281%29%3C%2Fscript%3E |
-      | ExpectedOutput   | 403 Forbidden                                                                                                                       |
-      | Retry            | 10                                                                                                                                  |
-
+      | Url            | http://${ingress.status.loadBalancer.ingress[0].hostname}/base64/SFRUUEJJTiBpcyBhd2Vzb21l?q=%3Cscript%3Ealert%281%29%3C%2Fscript%3E |
+      | ExpectedOutput |                                                                                                                       403 Forbidden |
+      | Retry          |                                                                                                                                  10 |
     And HTTP operation succeeds:
       | Url            | http://${ingress.status.loadBalancer.ingress[0].hostname}/base64/SFRUUEJJTiBpcyBhd2Vzb21l |
       | ExpectedOutput | HTTPBIN is awesome                                                                        |
-
     # Clean up
-
     When resource "ingress" is deleted
     Then eventually resource "ingress" does not exist
-
     When resource "policy" is deleted
     Then eventually resource "policy" does not exist
-
     When resource "ingressclass" is deleted
     Then eventually resource "ingressclass" does not exist
-
     When resource "deployment" is deleted
     Then eventually resource "deployment" does not exist
-
     When resource "service" is deleted
     Then eventually resource "service" does not exist
-
     When resource "sa" is deleted
     Then eventually resource "sa" does not exist

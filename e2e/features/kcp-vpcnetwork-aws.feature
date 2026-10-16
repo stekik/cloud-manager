@@ -2,15 +2,11 @@ Feature: VpcNetwork AWS
 
   @kcp @aws @vpcnetwork
   Scenario: VpcNetwork AWS is created and deleted
-
     Given current cluster is "kcp"
-
     Given resource declaration:
-      | Alias     | Kind                  | ApiVersion                              | Name               | Namespace |
-      | vpc       | VpcNetwork            | cloud-control.kyma-project.io/v1beta1   | e2e-${id()}        |           |
-
+      | Alias | Kind       | ApiVersion                            | Name        | Namespace |
+      | vpc   | VpcNetwork | cloud-control.kyma-project.io/v1beta1 | e2e-${id()} |           |
     Given Subscription "subscription" exists for "AWS" provider
-
     When resource "vpc" is created:
       """
       apiVersion: cloud-control.kyma-project.io/v1beta1
@@ -21,10 +17,7 @@ Feature: VpcNetwork AWS
           - "10.250.0.0/16"
         region: us-east-1
       """
-
     Then eventually "findConditionTrue(vpc, 'Ready')" is ok, unless:
       | findConditionFalse(vpc, 'Ready') |
-
     When resource "vpc" is deleted
-
     Then eventually resource "vpc" does not exist

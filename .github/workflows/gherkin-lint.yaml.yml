@@ -20,12 +20,8 @@ jobs:
         with:
           node-version: ${{ vars.NODE_VERSION }}
 
-      - name: NPM install
+      - name: Gherkin format check
         shell: bash
         run: |
-          npm install -g gherkin-lint
-
-      - name: Gherkin lint
-        shell: bash
-        run: |
-          gherkin-lint --rulesdir e2e/features
+          npx -y @cucumber/gherkin-utils@12.0.2 format e2e/features/*.feature
+          git diff --exit-code e2e/features
