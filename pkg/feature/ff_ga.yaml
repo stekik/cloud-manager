@@ -35,6 +35,10 @@ apiDisabled:
       query: feature == "rediscluster" and provider == "alicloud"
       variation: disabled
 
+    - name: Disable VpcPeering on AliCloud
+      query: feature == "peering" and provider == "alicloud"
+      variation: disabled
+
     - name: Disable all on trial
       query: brokerPlan == "trial"
       variation: disabled
