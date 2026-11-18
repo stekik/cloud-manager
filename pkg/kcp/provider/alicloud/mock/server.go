@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/google/uuid"
+	alicloudexposeddataclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/exposedData/client"
 	alicloudiprangeclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/iprange/client"
 	alicloudnfsinstanceclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/nfsinstance/client"
 	alicloudredisclusterclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/rediscluster/client"
@@ -135,6 +136,18 @@ func (s *server) RedisClusterClientProvider() alicloudredisclusterclient.ClientP
 		}
 		return a.Region(region).RedisClusterClient(), nil
 	}
+}
+
+func (s *server) ExposedDataProvider() alicloudexposeddataclient.ClientProvider {
+	return func(ctx context.Context, region, accessKeyId, accessKeySecret, _ string) (alicloudexposeddataclient.Client, error) {
+		return &mockExposedDataClient{}, nil
+	}
+}
+
+type mockExposedDataClient struct{}
+
+func (c *mockExposedDataClient) DescribeNatGateways(_ context.Context, _ string) ([]alicloudexposeddataclient.NatGatewayInfo, error) {
+	return nil, nil
 }
 
 func (s *server) firstAccount() Account {

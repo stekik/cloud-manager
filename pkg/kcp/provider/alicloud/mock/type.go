@@ -1,6 +1,7 @@
 package mock
 
 import (
+	alicloudexposeddataclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/exposedData/client"
 	alicloudiprangeclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/iprange/client"
 	alicloudnfsinstanceclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/nfsinstance/client"
 	alicloudredisclusterclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/rediscluster/client"
@@ -94,6 +95,7 @@ type Providers interface {
 	NfsInstanceClientProvider() alicloudnfsinstanceclient.ClientProvider
 	RedisInstanceClientProvider() alicloudredisinstanceclient.ClientProvider
 	RedisClusterClientProvider() alicloudredisclusterclient.ClientProvider
+	ExposedDataProvider() alicloudexposeddataclient.ClientProvider
 	// ScopeGardenProvider yields the STS client the scope reconciler uses to
 	// resolve the account id via GetCallerIdentity.
 	ScopeGardenProvider() awsclient.GardenClientProvider[scopeclient.AlicloudStsClient]
