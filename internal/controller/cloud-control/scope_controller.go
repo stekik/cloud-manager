@@ -5,6 +5,8 @@ import (
 	"time"
 
 	cloudcontrolv1beta1 "github.com/kyma-project/cloud-manager/api/cloud-control/v1beta1"
+	alicloudexposeddata "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/exposedData"
+	alicloudexposeddataclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/exposedData/client"
 	awsclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/aws/client"
 	awsexposeddata "github.com/kyma-project/cloud-manager/pkg/kcp/provider/aws/exposedData"
 	awsexposeddataclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/aws/exposedData/client"
@@ -41,6 +43,7 @@ func SetupScopeReconciler(
 	azureClientProvider azureclient.ClientProvider[azureexposeddataclient.Client],
 	gcpClientProvider gcpclient.GcpClientProvider[gcpexposeddataclient.Client],
 	sapClientProvider sapclient.SapClientProvider[sapexposeddataclient.Client],
+	alicloudClientProvider alicloudexposeddataclient.ClientProvider,
 ) error {
 	return NewScopeReconciler(
 		kcpscope.New(
@@ -53,6 +56,7 @@ func SetupScopeReconciler(
 			azureexposeddata.NewStateFactory(azureClientProvider),
 			gcpexposeddata.NewStateFactory(gcpClientProvider),
 			sapexposeddata.NewStateFactory(sapClientProvider),
+			alicloudexposeddata.NewStateFactory(alicloudClientProvider),
 		),
 	).SetupWithManager(ctx, kcpManager)
 }

@@ -41,6 +41,7 @@ import (
 
 	commonconfig "github.com/kyma-project/cloud-manager/pkg/common/config"
 	commonscheme "github.com/kyma-project/cloud-manager/pkg/common/scheme"
+	alicloudexposeddataclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/exposedData/client"
 	alicloudiprangeclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/iprange/client"
 	alicloudnfsinstanceclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/nfsinstance/client"
 	alicloudredisclusterclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/rediscluster/client"
@@ -439,6 +440,7 @@ func main() {
 		azureexposeddataclient.NewClientProvider(),
 		gcpexposeddataclient.NewClientProvider(gcpClients),
 		sapexposeddataclient.NewClientProvider(),
+		alicloudexposeddataclient.NewClientProvider(),
 	); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Scope")
 		os.Exit(1)

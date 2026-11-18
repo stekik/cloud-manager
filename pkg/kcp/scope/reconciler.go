@@ -8,6 +8,7 @@ import (
 	"github.com/kyma-project/cloud-manager/pkg/common/statewithscope"
 	"github.com/kyma-project/cloud-manager/pkg/composed"
 	"github.com/kyma-project/cloud-manager/pkg/feature"
+	alicloudexposeddata "github.com/kyma-project/cloud-manager/pkg/kcp/provider/alicloud/exposedData"
 	awsclient "github.com/kyma-project/cloud-manager/pkg/kcp/provider/aws/client"
 	awsexposeddata "github.com/kyma-project/cloud-manager/pkg/kcp/provider/aws/exposedData"
 	azureexposeddata "github.com/kyma-project/cloud-manager/pkg/kcp/provider/azure/exposedData"
@@ -44,6 +45,7 @@ func New(
 	azureStateFactory azureexposeddata.StateFactory,
 	gcpStateFactory gcpexposeddata.StateFactory,
 	sapStateFactory sapexposeddata.StateFactory,
+	alicloudStateFactory alicloudexposeddata.StateFactory,
 ) ScopeReconciler {
 	return NewScopeReconciler(
 		NewStateFactory(
@@ -57,6 +59,7 @@ func New(
 		azureStateFactory,
 		gcpStateFactory,
 		sapStateFactory,
+		alicloudStateFactory,
 	)
 }
 
@@ -66,23 +69,26 @@ func NewScopeReconciler(
 	azureStateFactory azureexposeddata.StateFactory,
 	gcpStateFactory gcpexposeddata.StateFactory,
 	sapStateFactory sapexposeddata.StateFactory,
+	alicloudStateFactory alicloudexposeddata.StateFactory,
 ) ScopeReconciler {
 	return &scopeReconciler{
-		stateFactory:      stateFactory,
-		awsStateFactory:   awsStateFactory,
-		azureStateFactory: azureStateFactory,
-		gcpStateFactory:   gcpStateFactory,
-		sapStateFactory:   sapStateFactory,
+		stateFactory:         stateFactory,
+		awsStateFactory:      awsStateFactory,
+		azureStateFactory:    azureStateFactory,
+		gcpStateFactory:      gcpStateFactory,
+		sapStateFactory:      sapStateFactory,
+		alicloudStateFactory: alicloudStateFactory,
 	}
 }
 
 type scopeReconciler struct {
 	stateFactory StateFactory
 
-	awsStateFactory   awsexposeddata.StateFactory
-	azureStateFactory azureexposeddata.StateFactory
-	gcpStateFactory   gcpexposeddata.StateFactory
-	sapStateFactory   sapexposeddata.StateFactory
+	awsStateFactory      awsexposeddata.StateFactory
+	azureStateFactory    azureexposeddata.StateFactory
+	gcpStateFactory      gcpexposeddata.StateFactory
+	sapStateFactory      sapexposeddata.StateFactory
+	alicloudStateFactory alicloudexposeddata.StateFactory
 }
 
 func (r *scopeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
@@ -147,6 +153,7 @@ func (r *scopeReconciler) newAction() composed.Action {
 						composed.NewCase(statewithscope.AzureProviderPredicate, azureexposeddata.New(r.azureStateFactory)),
 						composed.NewCase(statewithscope.GcpProviderPredicate, gcpexposeddata.New(r.gcpStateFactory)),
 						composed.NewCase(statewithscope.OpenStackProviderPredicate, sapexposeddata.New(r.sapStateFactory)),
+						composed.NewCase(statewithscope.AlicloudProviderPredicate, alicloudexposeddata.New(r.alicloudStateFactory)),
 					),
 					exposedDataSaveToScope,
 					exposedDataSaveToSkr,
